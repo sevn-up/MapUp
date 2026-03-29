@@ -7,7 +7,6 @@ import * as THREE from "three";
 import { useGlobeStore } from "@/hooks/useGlobeStore";
 import { CountryBorders } from "./CountryBorders";
 import { Atmosphere } from "./Atmosphere";
-import { GlobePins } from "./GlobePins";
 import { ArcLine } from "./ArcLine";
 import { latLngToVector3 } from "@/lib/geo/geojson-utils";
 
@@ -127,9 +126,6 @@ export function GlobeScene() {
       {arcs.map((arc, i) => (
         <ArcLine key={i} from={arc.from} to={arc.to} radius={GLOBE_RADIUS} />
       ))}
-
-      {/* Pins */}
-      <GlobePins radius={GLOBE_RADIUS} />
 
       {/* Stars — dimmer, more ambient */}
       <Stars
