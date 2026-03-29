@@ -139,7 +139,7 @@ export function CountryBorders({ radius }: CountryBordersProps) {
       {/* Default country borders */}
       {defaultBorderGeo && (
         <lineSegments geometry={defaultBorderGeo}>
-          <lineBasicMaterial color="#3ddc84" transparent opacity={0.6} />
+          <lineBasicMaterial color="#4ade80" transparent opacity={0.4} />
         </lineSegments>
       )}
 

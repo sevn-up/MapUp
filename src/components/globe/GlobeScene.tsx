@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Stars } from "@react-three/drei";
+import { OrbitControls, Stars, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { useGlobeStore } from "@/hooks/useGlobeStore";
 import { CountryBorders } from "./CountryBorders";
@@ -12,60 +12,22 @@ import { latLngToVector3 } from "@/lib/geo/geojson-utils";
 
 const GLOBE_RADIUS = 2;
 
-/**
- * Ocean sphere — matte dark, no specular
- */
-function OceanSphere() {
+function EarthSphere() {
+  const texture = useTexture("/textures/earth-dark.jpg");
+
   const material = useMemo(() => {
-    return new THREE.MeshLambertMaterial({
-      color: new THREE.Color("#080e18"),
-      emissive: new THREE.Color("#030608"),
-      emissiveIntensity: 0.5,
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return new THREE.MeshStandardMaterial({
+      map: texture,
+      roughness: 0.9,
+      metalness: 0.05,
     });
-  }, []);
+  }, [texture]);
 
   return (
     <mesh material={material}>
       <sphereGeometry args={[GLOBE_RADIUS, 64, 64]} />
     </mesh>
-  );
-}
-
-/**
- * Subtle lat/lng grid lines for depth
- */
-function GlobeGrid() {
-  const geometry = useMemo(() => {
-    const points: THREE.Vector3[] = [];
-    const r = GLOBE_RADIUS + 0.001;
-
-    // Latitude lines every 30 degrees
-    for (let lat = -60; lat <= 60; lat += 30) {
-      for (let lng = 0; lng <= 360; lng += 3) {
-        const [x1, y1, z1] = latLngToVector3(lat, lng, r);
-        const [x2, y2, z2] = latLngToVector3(lat, lng + 3, r);
-        points.push(new THREE.Vector3(x1, y1, z1));
-        points.push(new THREE.Vector3(x2, y2, z2));
-      }
-    }
-
-    // Longitude lines every 30 degrees
-    for (let lng = 0; lng < 360; lng += 30) {
-      for (let lat = -90; lat < 90; lat += 3) {
-        const [x1, y1, z1] = latLngToVector3(lat, lng, r);
-        const [x2, y2, z2] = latLngToVector3(lat + 3, lng, r);
-        points.push(new THREE.Vector3(x1, y1, z1));
-        points.push(new THREE.Vector3(x2, y2, z2));
-      }
-    }
-
-    return new THREE.BufferGeometry().setFromPoints(points);
-  }, []);
-
-  return (
-    <lineSegments geometry={geometry}>
-      <lineBasicMaterial color="#1a2a40" transparent opacity={0.2} />
-    </lineSegments>
   );
 }
 
@@ -112,14 +74,13 @@ export function GlobeScene() {
 
   return (
     <>
-      {/* Lighting — even, no harsh shadows */}
-      <ambientLight intensity={0.4} color="#c0d0e0" />
-      <directionalLight position={[5, 3, 5]} intensity={0.6} color="#ffffff" />
+      {/* Lighting */}
+      <ambientLight intensity={0.6} />
+      <directionalLight position={[5, 3, 5]} intensity={0.8} color="#ffffff" />
       <directionalLight position={[-5, -3, -5]} intensity={0.3} color="#ffffff" />
 
-      {/* Globe */}
-      <OceanSphere />
-      <GlobeGrid />
+      {/* Textured Earth */}
+      <EarthSphere />
       <CountryBorders radius={GLOBE_RADIUS} />
       <Atmosphere radius={GLOBE_RADIUS} />
 
@@ -128,11 +89,11 @@ export function GlobeScene() {
         <ArcLine key={i} from={arc.from} to={arc.to} radius={GLOBE_RADIUS} />
       ))}
 
-      {/* Stars — dimmer, more ambient */}
+      {/* Stars */}
       <Stars
         radius={80}
         depth={60}
-        count={2500}
+        count={2000}
         factor={3}
         saturation={0.1}
         fade

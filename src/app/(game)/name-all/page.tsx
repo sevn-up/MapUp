@@ -107,7 +107,7 @@ function GameScreen() {
     timeLimitSeconds,
   } = useNameAllGame();
 
-  const { highlightCountry, flyToCountry, setAutoRotate } = useGlobeStore();
+  const { highlightCountry, flyToCountry, setAutoRotate, reset: resetGlobe } = useGlobeStore();
   const { timeLeft, isExpired, start } = useCountdown(timeLimitSeconds);
 
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
@@ -115,12 +115,13 @@ function GameScreen() {
   const [alreadyMsg, setAlreadyMsg] = useState(false);
   const feedbackTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // Start timer and stop globe spin
+  // Reset globe and start timer
   useEffect(() => {
+    resetGlobe();
     start();
     setAutoRotate(false);
     return () => setAutoRotate(true);
-  }, [start, setAutoRotate]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // End game when timer expires
   useEffect(() => {

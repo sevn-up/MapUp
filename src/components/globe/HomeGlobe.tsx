@@ -2,7 +2,7 @@
 
 import { useRef, useState, useMemo, useCallback, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Stars } from "@react-three/drei";
+import { OrbitControls, Stars, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { Suspense } from "react";
 import { useRouter } from "next/navigation";
@@ -30,11 +30,16 @@ const gamePins: GamePin[] = [
 ];
 
 function EarthSphere() {
-  const material = useMemo(() => new THREE.MeshLambertMaterial({
-    color: new THREE.Color("#080e18"),
-    emissive: new THREE.Color("#030608"),
-    emissiveIntensity: 0.5,
-  }), []);
+  const texture = useTexture("/textures/earth-dark.jpg");
+
+  const material = useMemo(() => {
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return new THREE.MeshStandardMaterial({
+      map: texture,
+      roughness: 0.9,
+      metalness: 0.05,
+    });
+  }, [texture]);
 
   return (
     <mesh material={material}>
@@ -147,12 +152,11 @@ function HomeGlobeScene({ positionsRef }: { positionsRef: React.MutableRefObject
 
   return (
     <>
-      <ambientLight intensity={0.4} color="#c0d0e0" />
-      <directionalLight position={[5, 3, 5]} intensity={0.6} color="#ffffff" />
+      <ambientLight intensity={0.6} />
+      <directionalLight position={[5, 3, 5]} intensity={0.8} color="#ffffff" />
       <directionalLight position={[-5, -3, -5]} intensity={0.3} color="#ffffff" />
 
       <EarthSphere />
-      <GlobeGrid />
       <CountryBorders radius={GLOBE_RADIUS} />
       <Atmosphere radius={GLOBE_RADIUS} />
       <PinDots />

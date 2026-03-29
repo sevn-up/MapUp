@@ -107,12 +107,17 @@ function GameScreen() {
     nextRound,
   } = useCountryShapeGame();
 
-  const { flyToCountry, highlightCountry, setAutoRotate } = useGlobeStore();
+  const { flyToCountry, highlightCountry, setAutoRotate, reset: resetGlobe } = useGlobeStore();
 
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
   const [confettiTrigger, setConfettiTrigger] = useState(0);
   const [shaking, setShaking] = useState(false);
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Reset globe highlights when game screen mounts
+  useEffect(() => {
+    resetGlobe();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Enter key advances to next country when answer is revealed
   useEffect(() => {
