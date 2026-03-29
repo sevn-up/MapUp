@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWorldle, generateShareText } from "@/application/useWorldle";
 import { useGlobeStore } from "@/application/useGlobe";
@@ -158,13 +158,30 @@ function GameScreen() {
 function ResultBanner() {
   const { targetCountry, guesses, isWon, reset } = useWorldle();
   const { reset: resetGlobe } = useGlobeStore();
+  const [copied, setCopied] = useState(false);
 
   if (!targetCountry) return null;
 
   const shareText = generateShareText(guesses, isWon);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(shareText);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(shareText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback: create a temporary textarea and select it
+      const el = document.createElement("textarea");
+      el.value = shareText;
+      el.style.position = "fixed";
+      el.style.opacity = "0";
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   return (
@@ -191,9 +208,18 @@ function ResultBanner() {
         )}
       </div>
 
+      {/* Share preview */}
+      <div className="rounded-lg border border-white/5 bg-navy p-3 text-center">
+        <pre className="text-sm text-slate-300 whitespace-pre-wrap">{shareText}</pre>
+      </div>
+
       <div className="flex gap-2">
-        <Button onClick={handleCopy} variant="secondary" className="flex-1">
-          Share Result
+        <Button
+          onClick={handleCopy}
+          variant="secondary"
+          className={cn("flex-1", copied && "border-green/40 text-green")}
+        >
+          {copied ? "Copied!" : "Copy to Share"}
         </Button>
         <Button
           onClick={() => { resetGlobe(); reset(); }}
