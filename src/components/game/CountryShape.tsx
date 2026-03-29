@@ -14,6 +14,21 @@ interface CountryShapeProps {
   className?: string;
 }
 
+// Cache the loaded features so we don't refetch every round
+let cachedFeatures: FeatureCollection | null = null;
+let loadingPromise: Promise<FeatureCollection> | null = null;
+
+function getFeatures(): Promise<FeatureCollection> {
+  if (cachedFeatures) return Promise.resolve(cachedFeatures);
+  if (!loadingPromise) {
+    loadingPromise = loadCountryFeatures("50m").then((f) => {
+      cachedFeatures = f;
+      return f;
+    });
+  }
+  return loadingPromise;
+}
+
 export function CountryShape({
   countryCode,
   revealed = false,
@@ -21,11 +36,13 @@ export function CountryShape({
   size = 280,
   className,
 }: CountryShapeProps) {
-  const [allFeatures, setAllFeatures] = useState<FeatureCollection | null>(null);
+  const [allFeatures, setAllFeatures] = useState<FeatureCollection | null>(cachedFeatures);
 
   useEffect(() => {
-    loadCountryFeatures("50m").then(setAllFeatures);
-  }, []);
+    if (!allFeatures) {
+      getFeatures().then(setAllFeatures);
+    }
+  }, [allFeatures]);
 
   const feature = useMemo(() => {
     if (!allFeatures) return null;
@@ -38,17 +55,18 @@ export function CountryShape({
 
   const svgPath = useMemo(() => {
     if (!feature) return null;
-    const projection = geoMercator().fitSize([size, size], feature);
+    // Add padding so the shape doesn't touch edges
+    const padding = size * 0.08;
+    const inner = size - padding * 2;
+    const projection = geoMercator().fitSize([inner, inner], feature);
     const pathGenerator = geoPath().projection(projection);
-    return pathGenerator(feature) || "";
+    const d = pathGenerator(feature);
+    return d || "";
   }, [feature, size]);
 
   if (!allFeatures) {
     return (
-      <div
-        className={cn("flex items-center justify-center", className)}
-        style={{ width: size, height: size }}
-      >
+      <div className={cn("flex items-center justify-center", className)} style={{ width: size, height: size }}>
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-green border-t-transparent" />
       </div>
     );
@@ -56,26 +74,27 @@ export function CountryShape({
 
   if (!svgPath) {
     return (
-      <div
-        className={cn("flex items-center justify-center text-slate-600", className)}
-        style={{ width: size, height: size }}
-      >
+      <div className={cn("flex items-center justify-center text-slate-600", className)} style={{ width: size, height: size }}>
         Shape not available
       </div>
     );
   }
 
-  const fillColor = revealed
-    ? isCorrect
-      ? "#00e676"
-      : "#ff5252"
-    : "#00e676";
+  const padding = size * 0.08;
 
+  // Color scheme based on state
+  const fillColor = revealed
+    ? isCorrect ? "#00e676" : "#ff5252"
+    : "#00e676";
   const strokeColor = revealed
-    ? isCorrect
-      ? "#69f0ae"
-      : "#ff8a80"
-    : "#69f0ae";
+    ? isCorrect ? "#69f0ae" : "#ff8a80"
+    : "#00c853";
+  const fillOpacity = revealed
+    ? isCorrect ? 0.85 : 0.75
+    : 0.6;
+  const glowColor = revealed
+    ? isCorrect ? "rgba(0,230,118,0.4)" : "rgba(255,82,82,0.4)"
+    : "rgba(0,230,118,0.25)";
 
   return (
     <div className={cn("relative", className)}>
@@ -83,16 +102,53 @@ export function CountryShape({
         width={size}
         height={size}
         viewBox={`0 0 ${size} ${size}`}
-        style={{ filter: revealed ? undefined : "drop-shadow(0 0 12px rgba(0,230,118,0.2))" }}
       >
-        <path
-          d={svgPath}
-          fill={fillColor}
-          stroke={strokeColor}
-          strokeWidth={1.5}
-          opacity={revealed ? 0.9 : 0.7}
-          className="transition-all duration-500"
-        />
+        {/* Glow filter */}
+        <defs>
+          <filter id={`glow-${countryCode}`} x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feFlood floodColor={glowColor} result="color" />
+            <feComposite in="color" in2="blur" operator="in" result="shadow" />
+            <feMerge>
+              <feMergeNode in="shadow" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        <g transform={`translate(${padding}, ${padding})`}>
+          {/* Shadow/glow layer */}
+          <path
+            d={svgPath}
+            fill={fillColor}
+            stroke="none"
+            opacity={0.15}
+            filter={`url(#glow-${countryCode})`}
+            className="transition-all duration-500"
+          />
+
+          {/* Main fill */}
+          <path
+            d={svgPath}
+            fill={fillColor}
+            stroke={strokeColor}
+            strokeWidth={2}
+            strokeLinejoin="round"
+            opacity={fillOpacity}
+            className="transition-all duration-500"
+          />
+
+          {/* Inner highlight stroke for definition */}
+          <path
+            d={svgPath}
+            fill="none"
+            stroke={revealed ? (isCorrect ? "#b9f6ca" : "#ffcdd2") : "#b9f6ca"}
+            strokeWidth={0.5}
+            strokeLinejoin="round"
+            opacity={0.3}
+            className="transition-all duration-500"
+          />
+        </g>
       </svg>
     </div>
   );

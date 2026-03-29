@@ -22,9 +22,12 @@ const atmosphereFragmentShader = `
   varying vec3 vPosition;
   void main() {
     vec3 viewDir = normalize(-vPosition);
-    float intensity = pow(0.6 - dot(vNormal, viewDir), 2.5);
-    vec3 color = mix(vec3(0.0, 0.5, 0.3), vec3(0.0, 0.9, 0.46), intensity);
-    gl_FragColor = vec4(color, intensity * 0.4);
+    float intensity = pow(0.6 - dot(vNormal, viewDir), 2.0);
+    // Blue-teal atmosphere with a hint of green
+    vec3 innerColor = vec3(0.1, 0.4, 0.6);  // deep blue-teal
+    vec3 outerColor = vec3(0.2, 0.7, 0.5);  // green-teal edge
+    vec3 color = mix(innerColor, outerColor, intensity);
+    gl_FragColor = vec4(color, intensity * 0.35);
   }
 `;
 
@@ -43,7 +46,7 @@ export function Atmosphere({ radius }: AtmosphereProps) {
   );
 
   return (
-    <mesh material={material} scale={1.15}>
+    <mesh material={material} scale={1.12}>
       <sphereGeometry args={[radius, 64, 64]} />
     </mesh>
   );

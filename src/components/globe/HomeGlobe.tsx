@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState, useMemo, useCallback } from "react";
+import { useRef, useState, useMemo, useCallback, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { OrbitControls, Stars, Html } from "@react-three/drei";
+import { OrbitControls, Stars } from "@react-three/drei";
 import * as THREE from "three";
 import { Suspense } from "react";
 import { useRouter } from "next/navigation";
@@ -23,53 +23,18 @@ interface GamePin {
 }
 
 const gamePins: GamePin[] = [
-  {
-    id: "country-shape",
-    label: "Shape Quiz",
-    description: "Identify countries by silhouette",
-    href: "/country-shape",
-    lat: 48.8,
-    lng: 2.35, // Paris, Europe
-    ready: true,
-  },
-  {
-    id: "name-all",
-    label: "Name All",
-    description: "Name 197 countries",
-    href: "/name-all",
-    lat: -1.3,
-    lng: 36.8, // Nairobi, Africa
-    ready: false,
-  },
-  {
-    id: "worldle",
-    label: "Worldle",
-    description: "Daily country puzzle",
-    href: "/worldle",
-    lat: 35.7,
-    lng: 139.7, // Tokyo, Asia
-    ready: false,
-  },
-  {
-    id: "street-view",
-    label: "Street View",
-    description: "Guess the location",
-    href: "/street-view",
-    lat: -22.9,
-    lng: -43.2, // Rio, South America
-    ready: false,
-  },
+  { id: "country-shape", label: "Shape Quiz", description: "Identify countries by silhouette", href: "/country-shape", lat: 48.8, lng: 2.35, ready: true },
+  { id: "name-all", label: "Name All", description: "Name 197 countries", href: "/name-all", lat: -1.3, lng: 36.8, ready: false },
+  { id: "worldle", label: "Worldle", description: "Daily country puzzle", href: "/worldle", lat: 35.7, lng: 139.7, ready: false },
+  { id: "street-view", label: "Street View", description: "Guess the location", href: "/street-view", lat: -22.9, lng: -43.2, ready: false },
 ];
 
 function EarthSphere() {
-  const material = useMemo(() => {
-    return new THREE.MeshPhongMaterial({
-      color: new THREE.Color("#060d1f"),
-      emissive: new THREE.Color("#020810"),
-      emissiveIntensity: 0.3,
-      shininess: 15,
-    });
-  }, []);
+  const material = useMemo(() => new THREE.MeshLambertMaterial({
+    color: new THREE.Color("#080e18"),
+    emissive: new THREE.Color("#030608"),
+    emissiveIntensity: 0.5,
+  }), []);
 
   return (
     <mesh material={material}>
@@ -103,151 +68,95 @@ function GlobeGrid() {
 
   return (
     <lineSegments geometry={geometry}>
-      <lineBasicMaterial color="#145530" transparent opacity={0.3} />
+      <lineBasicMaterial color="#1a2a40" transparent opacity={0.2} />
     </lineSegments>
   );
 }
 
-function GamePinMarker({
-  pin,
-  onSelect,
-}: {
-  pin: GamePin;
-  onSelect: (pin: GamePin) => void;
-}) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const ringRef = useRef<THREE.Mesh>(null);
-  const [hovered, setHovered] = useState(false);
-  const position = useMemo(
-    () => latLngToVector3(pin.lat, pin.lng, GLOBE_RADIUS + 0.04),
-    [pin.lat, pin.lng]
-  );
+// Glowing pin dots rendered in 3D — no labels here (labels are CSS overlay)
+function PinDots() {
+  const dotsRef = useRef<THREE.Group>(null);
 
   useFrame((state) => {
-    if (meshRef.current) {
-      meshRef.current.lookAt(0, 0, 0);
-      // Gentle float
-      const t = state.clock.elapsedTime;
-      meshRef.current.position.set(
-        position[0],
-        position[1] + Math.sin(t * 1.5 + pin.lat) * 0.015,
-        position[2]
-      );
-    }
-    if (ringRef.current) {
-      ringRef.current.lookAt(0, 0, 0);
-      // Pulsing ring
-      const scale = 1 + Math.sin(state.clock.elapsedTime * 2) * 0.15;
-      ringRef.current.scale.set(scale, scale, 1);
-    }
+    if (!dotsRef.current) return;
+    dotsRef.current.children.forEach((child, i) => {
+      const mesh = child as THREE.Mesh;
+      const t = state.clock.elapsedTime * 1.5 + i;
+      const scale = 1 + Math.sin(t) * 0.2;
+      mesh.scale.set(scale, scale, scale);
+    });
   });
 
   return (
-    <group>
-      {/* Glowing dot */}
-      <mesh
-        ref={meshRef}
-        position={position}
-        onClick={() => onSelect(pin)}
-        onPointerOver={() => setHovered(true)}
-        onPointerOut={() => setHovered(false)}
-      >
-        <sphereGeometry args={[hovered ? 0.06 : 0.04, 16, 16]} />
-        <meshBasicMaterial
-          color={pin.ready ? "#00e676" : "#334155"}
-          transparent
-          opacity={pin.ready ? 1 : 0.6}
-        />
-      </mesh>
-
-      {/* Pulse ring */}
-      {pin.ready && (
-        <mesh ref={ringRef} position={position}>
-          <ringGeometry args={[0.05, 0.07, 32]} />
-          <meshBasicMaterial
-            color="#00e676"
-            transparent
-            opacity={0.3}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      )}
-
-      {/* Label */}
-      <Html
-        position={position}
-        center
-        style={{
-          pointerEvents: hovered ? "auto" : "none",
-          transition: "all 0.2s ease",
-        }}
-        distanceFactor={5}
-      >
-        <div
-          onClick={() => onSelect(pin)}
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
-          className={`
-            cursor-pointer select-none whitespace-nowrap rounded-lg px-3 py-1.5
-            text-center transition-all duration-200
-            ${
-              hovered
-                ? "scale-110 bg-navy-light/95 border border-green/40 shadow-[0_0_20px_rgba(0,230,118,0.2)]"
-                : "bg-navy/80 border border-green/10"
-            }
-          `}
-          style={{ transform: "translateY(-30px)" }}
-        >
-          <div
-            className={`text-xs font-bold ${pin.ready ? "text-green" : "text-slate-500"}`}
-          >
-            {pin.label}
-          </div>
-          {hovered && (
-            <div className="mt-0.5 text-[10px] text-slate-400">
-              {pin.ready ? pin.description : "Coming soon"}
-            </div>
-          )}
-        </div>
-      </Html>
+    <group ref={dotsRef}>
+      {gamePins.map((pin) => {
+        const pos = latLngToVector3(pin.lat, pin.lng, GLOBE_RADIUS + 0.025);
+        return (
+          <mesh key={pin.id} position={pos}>
+            <sphereGeometry args={[0.035, 16, 16]} />
+            <meshBasicMaterial
+              color={pin.ready ? "#00e676" : "#334155"}
+              transparent
+              opacity={pin.ready ? 0.9 : 0.5}
+            />
+          </mesh>
+        );
+      })}
     </group>
   );
 }
 
-function HomeGlobeScene({
-  onSelectGame,
+// Writes projected screen positions to a shared ref — no React state, no re-renders
+function ScreenProjector({
+  positionsRef,
 }: {
-  onSelectGame: (pin: GamePin) => void;
+  positionsRef: React.MutableRefObject<{ x: number; y: number; visible: boolean }[]>;
 }) {
+  const { camera, size } = useThree();
+  const worldPositions = useMemo(
+    () => gamePins.map((pin) => new THREE.Vector3(...latLngToVector3(pin.lat, pin.lng, GLOBE_RADIUS + 0.08))),
+    []
+  );
+
+  useFrame(() => {
+    const halfW = size.width / 2;
+    const halfH = size.height / 2;
+
+    worldPositions.forEach((wp, i) => {
+      const projected = wp.clone().project(camera);
+      const behind = projected.z > 1;
+      // Check if on the back side of the globe
+      const camDir = new THREE.Vector3().subVectors(wp, camera.position).normalize();
+      const globeCenter = new THREE.Vector3(0, 0, 0);
+      const toPosDir = new THREE.Vector3().subVectors(wp, globeCenter).normalize();
+      const dotProduct = camDir.dot(toPosDir);
+
+      positionsRef.current[i] = {
+        x: (projected.x * halfW) + halfW,
+        y: -(projected.y * halfH) + halfH,
+        visible: !behind && dotProduct < 0,
+      };
+    });
+  });
+
+  return null;
+}
+
+function HomeGlobeScene({ positionsRef }: { positionsRef: React.MutableRefObject<{ x: number; y: number; visible: boolean }[]> }) {
   return (
     <>
-      <ambientLight intensity={0.1} />
-      <directionalLight position={[5, 3, 5]} intensity={0.8} color="#e0ffe0" />
-      <directionalLight
-        position={[-3, -1, -3]}
-        intensity={0.2}
-        color="#00e676"
-      />
-      <pointLight position={[0, 5, 0]} intensity={0.15} color="#00e676" />
+      <ambientLight intensity={0.4} color="#c0d0e0" />
+      <directionalLight position={[5, 3, 5]} intensity={0.6} color="#ffffff" />
+      <directionalLight position={[-5, -3, -5]} intensity={0.3} color="#ffffff" />
 
       <EarthSphere />
       <GlobeGrid />
       <CountryBorders radius={GLOBE_RADIUS} />
       <Atmosphere radius={GLOBE_RADIUS} />
+      <PinDots />
+      <ScreenProjector positionsRef={positionsRef} />
 
-      {gamePins.map((pin) => (
-        <GamePinMarker key={pin.id} pin={pin} onSelect={onSelectGame} />
-      ))}
-
-      <Stars
-        radius={80}
-        depth={60}
-        count={3000}
-        factor={3}
-        saturation={0}
-        fade
-        speed={0.2}
-      />
+      <Stars radius={80} depth={60} count={3000} factor={3} saturation={0} fade speed={0.2} />
 
       <OrbitControls
         enablePan={false}
@@ -255,7 +164,7 @@ function HomeGlobeScene({
         minDistance={3}
         maxDistance={10}
         autoRotate
-        autoRotateSpeed={0.5}
+        autoRotateSpeed={0.4}
         dampingFactor={0.08}
         enableDamping
         rotateSpeed={0.5}
@@ -264,26 +173,84 @@ function HomeGlobeScene({
   );
 }
 
-export function HomeGlobe() {
-  const router = useRouter();
+// CSS labels overlay — reads positions from ref via RAF, zero React re-renders
+function LabelsOverlay({
+  positionsRef,
+  onSelect,
+}: {
+  positionsRef: React.MutableRefObject<{ x: number; y: number; visible: boolean }[]>;
+  onSelect: (href: string) => void;
+}) {
+  const labelRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const rafRef = useRef<number>(0);
 
-  const handleSelectGame = useCallback(
-    (pin: GamePin) => {
-      router.push(pin.href);
-    },
-    [router]
-  );
+  useEffect(() => {
+    function update() {
+      positionsRef.current.forEach((pos, i) => {
+        const el = labelRefs.current[i];
+        if (!el) return;
+        if (pos.visible) {
+          el.style.transform = `translate(-50%, -100%) translate(${pos.x}px, ${pos.y - 12}px)`;
+          el.style.opacity = "1";
+          el.style.pointerEvents = "auto";
+        } else {
+          el.style.opacity = "0";
+          el.style.pointerEvents = "none";
+        }
+      });
+      rafRef.current = requestAnimationFrame(update);
+    }
+    rafRef.current = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(rafRef.current);
+  }, [positionsRef]);
 
   return (
-    <Canvas
-      camera={{ position: [0, 1.5, 4.5], fov: 45 }}
-      style={{ background: "transparent" }}
-      gl={{ antialias: true, alpha: true }}
-      dpr={[1, 2]}
-    >
-      <Suspense fallback={null}>
-        <HomeGlobeScene onSelectGame={handleSelectGame} />
-      </Suspense>
-    </Canvas>
+    <div className="absolute inset-0 overflow-hidden" style={{ pointerEvents: "none" }}>
+      {gamePins.map((pin, i) => (
+        <button
+          key={pin.id}
+          ref={(el) => { labelRefs.current[i] = el; }}
+          onClick={() => onSelect(pin.href)}
+          className={`
+            absolute top-0 left-0 rounded-lg px-3 py-1.5 text-xs font-bold
+            backdrop-blur-sm transition-colors duration-150 cursor-pointer
+            ${pin.ready
+              ? "bg-navy/90 border border-green/40 text-green hover:bg-green/20 hover:border-green shadow-[0_0_12px_rgba(0,230,118,0.15)]"
+              : "bg-navy/80 border border-white/10 text-slate-500 hover:bg-white/5"
+            }
+          `}
+          style={{ opacity: 0, pointerEvents: "none", willChange: "transform" }}
+        >
+          {pin.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function HomeGlobe() {
+  const router = useRouter();
+  const positionsRef = useRef<{ x: number; y: number; visible: boolean }[]>(
+    gamePins.map(() => ({ x: 0, y: 0, visible: false }))
+  );
+
+  const handleSelect = useCallback((href: string) => {
+    router.push(href);
+  }, [router]);
+
+  return (
+    <div className="relative h-full w-full">
+      <Canvas
+        camera={{ position: [0, 1.5, 4.5], fov: 45 }}
+        style={{ background: "transparent" }}
+        gl={{ antialias: true, alpha: true }}
+        dpr={[1, 2]}
+      >
+        <Suspense fallback={null}>
+          <HomeGlobeScene positionsRef={positionsRef} />
+        </Suspense>
+      </Canvas>
+      <LabelsOverlay positionsRef={positionsRef} onSelect={handleSelect} />
+    </div>
   );
 }

@@ -13,13 +13,15 @@ import { latLngToVector3 } from "@/lib/geo/geojson-utils";
 
 const GLOBE_RADIUS = 2;
 
-function EarthSphere() {
+/**
+ * Ocean sphere — matte dark, no specular
+ */
+function OceanSphere() {
   const material = useMemo(() => {
-    return new THREE.MeshPhongMaterial({
-      color: new THREE.Color("#060d1f"),
-      emissive: new THREE.Color("#020810"),
-      emissiveIntensity: 0.3,
-      shininess: 15,
+    return new THREE.MeshLambertMaterial({
+      color: new THREE.Color("#080e18"),
+      emissive: new THREE.Color("#030608"),
+      emissiveIntensity: 0.5,
     });
   }, []);
 
@@ -30,24 +32,29 @@ function EarthSphere() {
   );
 }
 
+/**
+ * Subtle lat/lng grid lines for depth
+ */
 function GlobeGrid() {
   const geometry = useMemo(() => {
     const points: THREE.Vector3[] = [];
-    const r = GLOBE_RADIUS + 0.002;
+    const r = GLOBE_RADIUS + 0.001;
 
+    // Latitude lines every 30 degrees
     for (let lat = -60; lat <= 60; lat += 30) {
-      for (let lng = 0; lng <= 360; lng += 2) {
+      for (let lng = 0; lng <= 360; lng += 3) {
         const [x1, y1, z1] = latLngToVector3(lat, lng, r);
-        const [x2, y2, z2] = latLngToVector3(lat, lng + 2, r);
+        const [x2, y2, z2] = latLngToVector3(lat, lng + 3, r);
         points.push(new THREE.Vector3(x1, y1, z1));
         points.push(new THREE.Vector3(x2, y2, z2));
       }
     }
 
+    // Longitude lines every 30 degrees
     for (let lng = 0; lng < 360; lng += 30) {
-      for (let lat = -90; lat < 90; lat += 2) {
+      for (let lat = -90; lat < 90; lat += 3) {
         const [x1, y1, z1] = latLngToVector3(lat, lng, r);
-        const [x2, y2, z2] = latLngToVector3(lat + 2, lng, r);
+        const [x2, y2, z2] = latLngToVector3(lat + 3, lng, r);
         points.push(new THREE.Vector3(x1, y1, z1));
         points.push(new THREE.Vector3(x2, y2, z2));
       }
@@ -58,7 +65,7 @@ function GlobeGrid() {
 
   return (
     <lineSegments geometry={geometry}>
-      <lineBasicMaterial color="#145530" transparent opacity={0.3} />
+      <lineBasicMaterial color="#1a2a40" transparent opacity={0.2} />
     </lineSegments>
   );
 }
@@ -67,24 +74,27 @@ function CameraController() {
   const { camera } = useThree();
   const flyTarget = useGlobeStore((s) => s.flyTarget);
   const targetRef = useRef<THREE.Vector3 | null>(null);
+  const startRef = useRef<THREE.Vector3 | null>(null);
   const progressRef = useRef(1);
 
   useEffect(() => {
     if (flyTarget) {
-      const [x, y, z] = latLngToVector3(flyTarget.lat, flyTarget.lng, 4.5);
+      const [x, y, z] = latLngToVector3(flyTarget.lat, flyTarget.lng, 4.2);
       targetRef.current = new THREE.Vector3(x, y, z);
+      startRef.current = camera.position.clone();
       progressRef.current = 0;
     }
-  }, [flyTarget]);
+  }, [flyTarget, camera]);
 
-  useFrame(() => {
-    if (targetRef.current && progressRef.current < 1) {
-      progressRef.current = Math.min(progressRef.current + 0.015, 1);
+  useFrame((_, delta) => {
+    if (targetRef.current && startRef.current && progressRef.current < 1) {
+      progressRef.current = Math.min(progressRef.current + delta * 0.9, 1);
       const t = easeInOutCubic(progressRef.current);
-      camera.position.lerp(targetRef.current, t * 0.05);
+      camera.position.lerpVectors(startRef.current, targetRef.current, t);
       camera.lookAt(0, 0, 0);
       if (progressRef.current >= 1) {
         targetRef.current = null;
+        startRef.current = null;
       }
     }
   });
@@ -102,32 +112,37 @@ export function GlobeScene() {
 
   return (
     <>
-      <ambientLight intensity={0.1} />
-      <directionalLight position={[5, 3, 5]} intensity={0.8} color="#e0ffe0" />
-      <directionalLight position={[-3, -1, -3]} intensity={0.2} color="#00e676" />
-      <pointLight position={[0, 5, 0]} intensity={0.15} color="#00e676" />
+      {/* Lighting — even, no harsh shadows */}
+      <ambientLight intensity={0.4} color="#c0d0e0" />
+      <directionalLight position={[5, 3, 5]} intensity={0.6} color="#ffffff" />
+      <directionalLight position={[-5, -3, -5]} intensity={0.3} color="#ffffff" />
 
-      <EarthSphere />
+      {/* Globe */}
+      <OceanSphere />
       <GlobeGrid />
       <CountryBorders radius={GLOBE_RADIUS} />
       <Atmosphere radius={GLOBE_RADIUS} />
 
+      {/* Arcs */}
       {arcs.map((arc, i) => (
         <ArcLine key={i} from={arc.from} to={arc.to} radius={GLOBE_RADIUS} />
       ))}
 
+      {/* Pins */}
       <GlobePins radius={GLOBE_RADIUS} />
 
+      {/* Stars — dimmer, more ambient */}
       <Stars
         radius={80}
         depth={60}
-        count={3000}
+        count={2500}
         factor={3}
-        saturation={0}
+        saturation={0.1}
         fade
-        speed={0.2}
+        speed={0.15}
       />
 
+      {/* Controls */}
       <CameraController />
       <OrbitControls
         enablePan={false}

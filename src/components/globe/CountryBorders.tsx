@@ -3,26 +3,26 @@
 import { useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 import type { FeatureCollection, Geometry, Position } from "geojson";
-import { loadCountryFeatures, latLngToVector3, numericToAlpha2 } from "@/lib/geo/geojson-utils";
+import {
+  loadCountryFeatures,
+  latLngToVector3,
+  numericToAlpha2,
+} from "@/lib/geo/geojson-utils";
 import { useGlobeStore } from "@/hooks/useGlobeStore";
 
 interface CountryBordersProps {
   radius: number;
 }
 
-function coordsToPoints(
-  coords: Position[],
-  radius: number
-): THREE.Vector3[] {
+function coordsToPoints(coords: Position[], radius: number): THREE.Vector3[] {
   return coords.map(([lng, lat]) => {
-    const [x, y, z] = latLngToVector3(lat, lng, radius + 0.003);
+    const [x, y, z] = latLngToVector3(lat, lng, radius);
     return new THREE.Vector3(x, y, z);
   });
 }
 
 function extractRings(geometry: Geometry): Position[][] {
   const rings: Position[][] = [];
-
   switch (geometry.type) {
     case "Polygon":
       geometry.coordinates.forEach((ring) => rings.push(ring));
@@ -32,73 +32,22 @@ function extractRings(geometry: Geometry): Position[][] {
         polygon.forEach((ring) => rings.push(ring))
       );
       break;
-    default:
-      break;
   }
-
   return rings;
 }
 
-function CountryMesh({
-  rings,
-  color,
-  opacity,
-  radius,
-}: {
-  rings: Position[][];
-  color: string;
-  opacity: number;
-  radius: number;
-}) {
-  const geometry = useMemo(() => {
-    const points: THREE.Vector3[] = [];
-    for (const ring of rings) {
-      const verts = coordsToPoints(ring, radius);
-      for (let i = 0; i < verts.length - 1; i++) {
-        points.push(verts[i], verts[i + 1]);
-      }
+function buildLineGeometry(
+  rings: Position[][],
+  radius: number
+): THREE.BufferGeometry {
+  const points: THREE.Vector3[] = [];
+  for (const ring of rings) {
+    const verts = coordsToPoints(ring, radius);
+    for (let i = 0; i < verts.length - 1; i++) {
+      points.push(verts[i], verts[i + 1]);
     }
-    return new THREE.BufferGeometry().setFromPoints(points);
-  }, [rings, radius]);
-
-  return (
-    <lineSegments geometry={geometry}>
-      <lineBasicMaterial color={color} transparent opacity={opacity} />
-    </lineSegments>
-  );
-}
-
-/**
- * Renders filled land polygons as a subtle solid layer beneath the borders.
- */
-function LandFill({
-  features,
-  radius,
-}: {
-  features: FeatureCollection;
-  radius: number;
-}) {
-  const geometry = useMemo(() => {
-    const allPoints: THREE.Vector3[] = [];
-
-    for (const feature of features.features) {
-      const rings = extractRings(feature.geometry);
-      for (const ring of rings) {
-        const verts = coordsToPoints(ring, radius + 0.001);
-        for (let i = 0; i < verts.length - 1; i++) {
-          allPoints.push(verts[i], verts[i + 1]);
-        }
-      }
-    }
-
-    return new THREE.BufferGeometry().setFromPoints(allPoints);
-  }, [features, radius]);
-
-  return (
-    <lineSegments geometry={geometry}>
-      <lineBasicMaterial color="#0f4d2a" transparent opacity={0.35} />
-    </lineSegments>
-  );
+  }
+  return new THREE.BufferGeometry().setFromPoints(points);
 }
 
 export function CountryBorders({ radius }: CountryBordersProps) {
@@ -109,56 +58,57 @@ export function CountryBorders({ radius }: CountryBordersProps) {
     loadCountryFeatures("50m").then(setFeatures);
   }, []);
 
-  // Parse highlighted features vs default features
-  const { defaultRings, highlightedFeatures } = useMemo(() => {
-    if (!features) return { defaultRings: [] as Position[][], highlightedFeatures: [] as { rings: Position[][]; color: string }[] };
+  const { defaultBorderGeo, highlightedBorders } = useMemo(() => {
+    if (!features)
+      return {
+        defaultBorderGeo: null,
+        highlightedBorders: [] as { geo: THREE.BufferGeometry; color: string }[],
+      };
 
-    const defRings: Position[][] = [];
-    const hlFeatures: { rings: Position[][]; color: string }[] = [];
+    const defaultRings: Position[][] = [];
+    const hlBorders: { geo: THREE.BufferGeometry; color: string }[] = [];
 
     for (const feature of features.features) {
       const numericId = feature.id?.toString() ?? "";
       const alpha2 = numericToAlpha2(numericId);
       const hlColor = alpha2 ? highlightedCountries.get(alpha2) : undefined;
-
       const rings = extractRings(feature.geometry);
 
       if (hlColor) {
-        hlFeatures.push({ rings, color: hlColor });
+        const lineGeo = buildLineGeometry(rings, radius + 0.005);
+        hlBorders.push({ geo: lineGeo, color: hlColor });
       } else {
-        defRings.push(...rings);
+        defaultRings.push(...rings);
       }
     }
 
-    return { defaultRings: defRings, highlightedFeatures: hlFeatures };
-  }, [features, highlightedCountries]);
+    const borderLines = buildLineGeometry(defaultRings, radius + 0.003);
+    return { defaultBorderGeo: borderLines, highlightedBorders: hlBorders };
+  }, [features, highlightedCountries, radius]);
 
   if (!features) return null;
 
   return (
     <group>
-      {/* Subtle land fill */}
-      <LandFill features={features} radius={radius} />
-
-      {/* Default country borders */}
-      {defaultRings.length > 0 && (
-        <CountryMesh
-          rings={defaultRings}
-          color="#00e676"
-          opacity={0.55}
-          radius={radius}
-        />
+      {/* Main country borders — bright enough to see clearly */}
+      {defaultBorderGeo && (
+        <lineSegments geometry={defaultBorderGeo}>
+          <lineBasicMaterial color="#3ddc84" transparent opacity={0.65} />
+        </lineSegments>
       )}
 
-      {/* Highlighted countries */}
-      {highlightedFeatures.map((hf, i) => (
-        <CountryMesh
-          key={i}
-          rings={hf.rings}
-          color={hf.color}
-          opacity={0.9}
-          radius={radius}
-        />
+      {/* Second pass — subtle glow layer underneath for thickness feel */}
+      {defaultBorderGeo && (
+        <lineSegments geometry={defaultBorderGeo}>
+          <lineBasicMaterial color="#1a6b3a" transparent opacity={0.35} />
+        </lineSegments>
+      )}
+
+      {/* Highlighted country borders — bright, full opacity */}
+      {highlightedBorders.map((hb, i) => (
+        <lineSegments key={`hl-${i}`} geometry={hb.geo}>
+          <lineBasicMaterial color={hb.color} transparent opacity={0.95} />
+        </lineSegments>
       ))}
     </group>
   );

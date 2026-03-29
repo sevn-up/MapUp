@@ -39,8 +39,8 @@ const games = [
 export default function HomePage() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-navy">
-      {/* Full-screen 3D Globe */}
-      <div className="absolute inset-0 top-16">
+      {/* Full-screen 3D Globe — fills behind navbar */}
+      <div className="absolute inset-0">
         <HomeGlobe />
       </div>
 
@@ -48,7 +48,7 @@ export default function HomePage() {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-80 bg-gradient-to-t from-navy via-navy/80 to-transparent" />
 
       {/* Header content */}
-      <div className="relative z-10 flex flex-col items-center pt-24 sm:pt-32">
+      <div className="relative z-10 flex flex-col items-center pt-20 sm:pt-28">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
