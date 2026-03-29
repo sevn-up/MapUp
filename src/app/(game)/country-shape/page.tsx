@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useCountryShapeGame } from "@/hooks/useCountryShapeGame";
+import { useCountryShapeGame, QUIZ_CATEGORIES, type QuizCategory } from "@/hooks/useCountryShapeGame";
 import { useGlobeStore } from "@/hooks/useGlobeStore";
 import { CountryShape } from "@/components/game/CountryShape";
 import { CountryInput } from "@/components/game/CountryInput";
@@ -14,31 +14,82 @@ import { cn } from "@/lib/utils/cn";
 
 function StartScreen() {
   const startGame = useCountryShapeGame((s) => s.startGame);
+  const [selectedCategory, setSelectedCategory] = useState<QuizCategory>("random");
+  const [rounds, setRounds] = useState(10);
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="mx-auto max-w-lg text-center"
+      className="mx-auto max-w-lg"
     >
-      <h1 className="mb-2 text-3xl font-bold text-white">
+      <h1 className="mb-2 text-center text-3xl font-bold text-white">
         Country Shape Quiz
       </h1>
-      <p className="mb-10 text-slate-500">
-        The globe will fly to a mystery country. Can you name it from its shape?
+      <p className="mb-8 text-center text-slate-500">
+        Can you name the country from its shape?
       </p>
 
-      <div className="space-y-3">
-        <Button onClick={() => startGame(10)} size="lg" className="w-full">
-          10 Rounds
-        </Button>
-        <Button onClick={() => startGame(20)} size="lg" variant="secondary" className="w-full">
-          20 Rounds
-        </Button>
-        <Button onClick={() => startGame(50)} size="lg" variant="ghost" className="w-full">
-          50 Rounds
-        </Button>
+      {/* Category Selection */}
+      <div className="mb-6">
+        <div className="mb-2 text-xs font-medium uppercase tracking-wider text-green/60">
+          Category
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {QUIZ_CATEGORIES.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              className={cn(
+                "rounded-lg border px-3 py-2.5 text-left transition-all",
+                selectedCategory === cat.id
+                  ? "border-green/40 bg-green/10 shadow-[0_0_12px_rgba(0,230,118,0.08)]"
+                  : "border-white/5 bg-white/[0.02] hover:bg-white/5"
+              )}
+            >
+              <div className={cn(
+                "text-sm font-semibold",
+                selectedCategory === cat.id ? "text-green" : "text-slate-300"
+              )}>
+                {cat.label}
+              </div>
+              <div className="text-xs text-slate-500">{cat.description}</div>
+            </button>
+          ))}
+        </div>
       </div>
+
+      {/* Round Count */}
+      <div className="mb-6">
+        <div className="mb-2 text-xs font-medium uppercase tracking-wider text-green/60">
+          Rounds
+        </div>
+        <div className="flex gap-2">
+          {[10, 20, 50].map((n) => (
+            <button
+              key={n}
+              onClick={() => setRounds(n)}
+              className={cn(
+                "flex-1 rounded-lg border py-2.5 text-sm font-semibold transition-all",
+                rounds === n
+                  ? "border-green/40 bg-green/10 text-green"
+                  : "border-white/5 bg-white/[0.02] text-slate-400 hover:bg-white/5"
+              )}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Start */}
+      <Button
+        onClick={() => startGame(rounds, selectedCategory)}
+        size="lg"
+        className="w-full"
+      >
+        Start Quiz
+      </Button>
     </motion.div>
   );
 }

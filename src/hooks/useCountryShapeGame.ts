@@ -3,6 +3,55 @@
 import { create } from "zustand";
 import { countries } from "@/lib/geo/countries";
 import type { Country } from "@/types/geo";
+import type { Continent } from "@/types/geo";
+
+export type QuizCategory =
+  | "random"
+  | "popular"
+  | "hard"
+  | Continent;
+
+export const QUIZ_CATEGORIES: { id: QuizCategory; label: string; description: string }[] = [
+  { id: "random", label: "Random", description: "Any country in the world" },
+  { id: "popular", label: "Well-Known", description: "50 most recognizable countries" },
+  { id: "hard", label: "Hard Mode", description: "Smaller, trickier countries" },
+  { id: "Africa", label: "Africa", description: "54 African countries" },
+  { id: "Asia", label: "Asia", description: "49 Asian countries" },
+  { id: "Europe", label: "Europe", description: "45 European countries" },
+  { id: "North America", label: "Americas", description: "North & South America" },
+  { id: "Oceania", label: "Oceania", description: "Pacific island nations" },
+];
+
+// Top 50 most well-known countries by a mix of population, tourism, and cultural familiarity
+const WELL_KNOWN_CODES = new Set([
+  "US", "CN", "IN", "BR", "RU", "JP", "DE", "GB", "FR", "IT",
+  "CA", "AU", "MX", "KR", "ES", "ID", "TR", "SA", "AR", "ZA",
+  "EG", "TH", "PL", "NL", "SE", "CH", "NO", "GR", "PT", "IE",
+  "NZ", "SG", "IL", "AE", "CO", "CL", "PE", "NG", "KE", "PK",
+  "PH", "VN", "MY", "AT", "BE", "DK", "FI", "CZ", "UA", "CU",
+]);
+
+// Filter out tiny countries that don't render well
+const playableCountries = countries.filter((c) => c.areaKm2 > 1000);
+
+function getPool(category: QuizCategory): Country[] {
+  switch (category) {
+    case "popular":
+      return playableCountries.filter((c) => WELL_KNOWN_CODES.has(c.code));
+    case "hard":
+      return playableCountries.filter((c) => !WELL_KNOWN_CODES.has(c.code));
+    case "random":
+      return playableCountries;
+    case "North America":
+      // Combine North + South America
+      return playableCountries.filter(
+        (c) => c.continent === "North America" || c.continent === "South America"
+      );
+    default:
+      // Continent filter
+      return playableCountries.filter((c) => c.continent === category);
+  }
+}
 
 interface ShapeGuess {
   guess: string;
@@ -11,9 +60,8 @@ interface ShapeGuess {
 }
 
 interface CountryShapeGameState {
-  // Game config
   totalRounds: number;
-  // Game state
+  category: QuizCategory;
   isPlaying: boolean;
   isFinished: boolean;
   currentRound: number;
@@ -22,8 +70,7 @@ interface CountryShapeGameState {
   guesses: ShapeGuess[];
   revealed: boolean;
   roundPool: Country[];
-  // Actions
-  startGame: (rounds?: number) => void;
+  startGame: (rounds: number, category?: QuizCategory) => void;
   submitGuess: (guess: string) => boolean;
   revealAnswer: () => void;
   nextRound: () => void;
@@ -43,15 +90,11 @@ function matchesCountry(guess: string, country: Country): boolean {
   const g = guess.toLowerCase().trim();
   if (country.name.toLowerCase() === g) return true;
   if (country.officialName?.toLowerCase() === g) return true;
-  if (country.alternateNames.some((alt) => alt.toLowerCase() === g))
-    return true;
+  if (country.alternateNames.some((alt) => alt.toLowerCase() === g)) return true;
 
-  // Fuzzy: check if close enough (simple Levenshtein for short names)
   const target = country.name.toLowerCase();
   if (target.length <= 4) return g === target;
-  // Allow 1-2 char difference for longer names
-  if (levenshtein(g, target) <= Math.min(2, Math.floor(target.length / 4)))
-    return true;
+  if (levenshtein(g, target) <= Math.min(2, Math.floor(target.length / 4))) return true;
 
   return false;
 }
@@ -76,11 +119,9 @@ function levenshtein(a: string, b: string): number {
   return matrix[b.length][a.length];
 }
 
-// Filter out very tiny countries that don't render well as shapes
-const playableCountries = countries.filter((c) => c.areaKm2 > 1000);
-
 export const useCountryShapeGame = create<CountryShapeGameState>((set, get) => ({
   totalRounds: 10,
+  category: "random",
   isPlaying: false,
   isFinished: false,
   currentRound: 0,
@@ -90,18 +131,21 @@ export const useCountryShapeGame = create<CountryShapeGameState>((set, get) => (
   revealed: false,
   roundPool: [],
 
-  startGame: (rounds = 10) => {
-    const pool = shuffleArray(playableCountries).slice(0, rounds);
+  startGame: (rounds = 10, category: QuizCategory = "random") => {
+    const pool = getPool(category);
+    const capped = Math.min(rounds, pool.length);
+    const selected = shuffleArray(pool).slice(0, capped);
     set({
-      totalRounds: rounds,
+      totalRounds: capped,
+      category,
       isPlaying: true,
       isFinished: false,
       currentRound: 1,
       score: 0,
-      currentCountry: pool[0],
+      currentCountry: selected[0],
       guesses: [],
       revealed: false,
-      roundPool: pool,
+      roundPool: selected,
     });
   },
 
@@ -143,10 +187,9 @@ export const useCountryShapeGame = create<CountryShapeGameState>((set, get) => (
       return;
     }
 
-    const nextIndex = currentRound; // 0-indexed pool, currentRound is 1-based
     set({
       currentRound: currentRound + 1,
-      currentCountry: roundPool[nextIndex],
+      currentCountry: roundPool[currentRound],
       revealed: false,
     });
   },
@@ -161,6 +204,7 @@ export const useCountryShapeGame = create<CountryShapeGameState>((set, get) => (
       guesses: [],
       revealed: false,
       roundPool: [],
+      category: "random",
     });
   },
 }));
