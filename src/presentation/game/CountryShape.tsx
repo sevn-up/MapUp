@@ -10,6 +10,7 @@ import type {
   MultiPolygon,
 } from "geojson";
 import { loadCountryFeatures, alpha2ToNumericCode } from "@/infrastructure/geojson";
+import { getCountryByCode } from "@/domain/countries";
 import { cn } from "@/lib/utils/cn";
 
 function getLargestPolygon(geometry: Geometry): Geometry {
@@ -74,10 +75,22 @@ export function CountryShape({
   const feature = useMemo(() => {
     if (!allFeatures) return null;
     const numericCode = alpha2ToNumericCode(countryCode);
-    if (!numericCode) return null;
-    return allFeatures.features.find(
-      (f) => f.id?.toString() === numericCode
-    ) as Feature<Geometry> | undefined;
+
+    // Try numeric ID first, then fall back to name match (for Kosovo, etc.)
+    let found = numericCode
+      ? allFeatures.features.find((f) => f.id?.toString() === numericCode)
+      : undefined;
+
+    if (!found) {
+      const country = getCountryByCode(countryCode);
+      if (country) {
+        found = allFeatures.features.find(
+          (f) => (f.properties as Record<string, string>)?.name === country.name
+        );
+      }
+    }
+
+    return found as Feature<Geometry> | undefined;
   }, [allFeatures, countryCode]);
 
   const svgPath = useMemo(() => {

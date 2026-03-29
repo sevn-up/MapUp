@@ -25,7 +25,7 @@ interface GamePin {
 const gamePins: GamePin[] = [
   { id: "country-shape", label: "Shape Quiz", description: "Identify countries by silhouette", href: "/country-shape", lat: 48.8, lng: 2.35, ready: true },
   { id: "name-all", label: "Name All", description: "Name 197 countries", href: "/name-all", lat: -1.3, lng: 36.8, ready: true },
-  { id: "worldle", label: "Worldle", description: "Daily country puzzle", href: "/worldle", lat: 35.7, lng: 139.7, ready: false },
+  { id: "worldle", label: "Worldle", description: "Daily country puzzle", href: "/worldle", lat: 35.7, lng: 139.7, ready: true },
   { id: "street-view", label: "Street View", description: "Guess the location", href: "/street-view", lat: -22.9, lng: -43.2, ready: false },
 ];
 

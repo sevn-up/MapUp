@@ -26,7 +26,7 @@ const games = [
     href: "/worldle",
     title: "Worldle",
     description: "Daily country puzzle with distance hints",
-    ready: false,
+    ready: true,
   },
   {
     href: "/street-view",
