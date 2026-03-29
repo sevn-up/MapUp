@@ -250,13 +250,18 @@ function GameScreen() {
 
 function ResultsScreen() {
   const { pool, namedCodes, resetGame } = useNameAllGame();
-  const { reset: resetGlobe } = useGlobeStore();
+  const { reset: resetGlobe, highlightCountry } = useGlobeStore();
 
   const named = pool.filter((c) => namedCodes.has(c.code));
   const missed = pool.filter((c) => !namedCodes.has(c.code));
   const percentage = Math.round((named.length / pool.length) * 100);
 
   const [showTab, setShowTab] = useState<"named" | "missed">("missed");
+
+  // Highlight missed countries in red on the globe
+  useEffect(() => {
+    missed.forEach((c) => highlightCountry(c.code, "#ff5252"));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePlayAgain = () => {
     resetGlobe();
