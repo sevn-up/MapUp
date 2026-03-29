@@ -8,7 +8,7 @@ import { Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { CountryBorders } from "./CountryBorders";
 import { Atmosphere } from "./Atmosphere";
-import { latLngToVector3 } from "@/lib/geo/geojson-utils";
+import { latLngToVector3 } from "@/infrastructure/geojson";
 
 const GLOBE_RADIUS = 2;
 

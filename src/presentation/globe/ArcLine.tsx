@@ -3,7 +3,7 @@
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
-import { latLngToVector3 } from "@/lib/geo/geojson-utils";
+import { latLngToVector3 } from "@/infrastructure/geojson";
 
 interface ArcLineProps {
   from: [number, number]; // [lat, lng]

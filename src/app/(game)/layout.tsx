@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 
 const Globe = dynamic(
-  () => import("@/components/globe/Globe").then((m) => m.Globe),
+  () => import("@/presentation/globe/Globe").then((m) => m.Globe),
   {
     ssr: false,
     loading: () => (

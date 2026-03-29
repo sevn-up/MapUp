@@ -3,8 +3,8 @@
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils/cn";
 import { formatDistance } from "@/lib/utils/formatters";
-import { bearingToArrow } from "@/lib/geo/distance";
-import type { DistanceResult } from "@/types/geo";
+import { bearingToArrow } from "@/domain/distance";
+import type { DistanceResult } from "@/domain/types";
 
 interface DistanceHintProps {
   result: DistanceResult;

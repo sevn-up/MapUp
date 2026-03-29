@@ -1,10 +1,10 @@
 "use client";
 
 import { create } from "zustand";
-import { countries } from "@/lib/geo/countries";
-import { matchesCountry, shuffleArray } from "@/lib/game/matching";
-import type { Country } from "@/types/geo";
-import type { Continent } from "@/types/geo";
+import { countries } from "@/domain/countries";
+import { matchesCountry, shuffleArray } from "@/domain/matching";
+import type { Country } from "@/domain/types";
+import type { Continent } from "@/domain/types";
 
 export type QuizCategory =
   | "random"

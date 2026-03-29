@@ -2,14 +2,14 @@
 
 import { useEffect, useCallback, useState, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNameAllGame, NAME_ALL_CATEGORIES, type NameAllCategory } from "@/hooks/useNameAllGame";
-import { useGlobeStore } from "@/hooks/useGlobeStore";
+import { useNameAllGame, NAME_ALL_CATEGORIES, type NameAllCategory } from "@/application/useNameAll";
+import { useGlobeStore } from "@/application/useGlobe";
 import { useCountdown } from "@/hooks/useCountdown";
-import { GameTimer } from "@/components/game/GameTimer";
-import { CountryInput } from "@/components/game/CountryInput";
-import { FeedbackOverlay } from "@/components/game/FeedbackOverlay";
-import { ConfettiEffect } from "@/components/game/ConfettiEffect";
-import { Button } from "@/components/ui/Button";
+import { GameTimer } from "@/presentation/game/GameTimer";
+import { CountryInput } from "@/presentation/game/CountryInput";
+import { FeedbackOverlay } from "@/presentation/game/FeedbackOverlay";
+import { ConfettiEffect } from "@/presentation/game/ConfettiEffect";
+import { Button } from "@/presentation/ui/Button";
 import { cn } from "@/lib/utils/cn";
 import { formatNumber } from "@/lib/utils/formatters";
 

@@ -1,9 +1,9 @@
 "use client";
 
 import { create } from "zustand";
-import { countries, getCountryByName } from "@/lib/geo/countries";
-import type { Country } from "@/types/geo";
-import type { Continent } from "@/types/geo";
+import { countries, getCountryByName } from "@/domain/countries";
+import type { Country } from "@/domain/types";
+import type { Continent } from "@/domain/types";
 
 export type NameAllCategory = "all" | Continent;
 

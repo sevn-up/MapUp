@@ -7,8 +7,8 @@ import {
   loadCountryFeatures,
   latLngToVector3,
   numericToAlpha2,
-} from "@/lib/geo/geojson-utils";
-import { useGlobeStore } from "@/hooks/useGlobeStore";
+} from "@/infrastructure/geojson";
+import { useGlobeStore } from "@/application/useGlobe";
 
 interface CountryBordersProps {
   radius: number;

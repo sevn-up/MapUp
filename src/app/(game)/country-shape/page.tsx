@@ -2,14 +2,14 @@
 
 import { useEffect, useCallback, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useCountryShapeGame, QUIZ_CATEGORIES, type QuizCategory } from "@/hooks/useCountryShapeGame";
-import { useGlobeStore } from "@/hooks/useGlobeStore";
-import { CountryShape } from "@/components/game/CountryShape";
-import { CountryInput } from "@/components/game/CountryInput";
-import { ScoreDisplay } from "@/components/game/ScoreDisplay";
-import { FeedbackOverlay } from "@/components/game/FeedbackOverlay";
-import { ConfettiEffect } from "@/components/game/ConfettiEffect";
-import { Button } from "@/components/ui/Button";
+import { useCountryShapeGame, QUIZ_CATEGORIES, type QuizCategory } from "@/application/useShapeQuiz";
+import { useGlobeStore } from "@/application/useGlobe";
+import { CountryShape } from "@/presentation/game/CountryShape";
+import { CountryInput } from "@/presentation/game/CountryInput";
+import { ScoreDisplay } from "@/presentation/game/ScoreDisplay";
+import { FeedbackOverlay } from "@/presentation/game/FeedbackOverlay";
+import { ConfettiEffect } from "@/presentation/game/ConfettiEffect";
+import { Button } from "@/presentation/ui/Button";
 import { cn } from "@/lib/utils/cn";
 
 function StartScreen() {

@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils/cn";
-import { getLevelFromXp } from "@/lib/game/xp";
+import { getLevelFromXp } from "@/domain/xp";
 import { formatNumber } from "@/lib/utils/formatters";
 
 interface XPBarProps {

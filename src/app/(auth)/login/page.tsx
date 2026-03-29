@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useSupabase } from "@/components/providers/SupabaseProvider";
-import { Button } from "@/components/ui/Button";
+import { useSupabase } from "@/presentation/providers/SupabaseProvider";
+import { Button } from "@/presentation/ui/Button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 

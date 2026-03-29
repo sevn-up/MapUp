@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAuth } from "@/components/providers/AuthProvider";
+import { useAuth } from "@/presentation/providers/AuthProvider";
 import { cn } from "@/lib/utils/cn";
 
 const navLinks = [

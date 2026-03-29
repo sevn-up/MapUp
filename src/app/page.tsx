@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 
 const HomeGlobe = dynamic(
-  () => import("@/components/globe/HomeGlobe").then((m) => m.HomeGlobe),
+  () => import("@/presentation/globe/HomeGlobe").then((m) => m.HomeGlobe),
   { ssr: false }
 );
 

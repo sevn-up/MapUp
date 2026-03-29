@@ -1,4 +1,4 @@
-import type { Country } from "@/types/geo";
+import type { Country } from "@/domain/types";
 
 export const countries: Country[] = [
   // ============ AFRICA ============

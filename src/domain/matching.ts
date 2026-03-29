@@ -1,4 +1,4 @@
-import type { Country } from "@/types/geo";
+import type { Country } from "@/domain/types";
 
 /**
  * Levenshtein distance between two strings.

@@ -1,4 +1,4 @@
-import type { DistanceResult, GeoPoint } from "@/types/geo";
+import type { DistanceResult, GeoPoint } from "@/domain/types";
 
 const EARTH_RADIUS_KM = 6371;
 const MAX_DISTANCE_KM = 20000; // approx half circumference

@@ -4,11 +4,11 @@ import { useRef, useEffect, useMemo } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Stars, useTexture } from "@react-three/drei";
 import * as THREE from "three";
-import { useGlobeStore } from "@/hooks/useGlobeStore";
+import { useGlobeStore } from "@/application/useGlobe";
 import { CountryBorders } from "./CountryBorders";
 import { Atmosphere } from "./Atmosphere";
 import { ArcLine } from "./ArcLine";
-import { latLngToVector3 } from "@/lib/geo/geojson-utils";
+import { latLngToVector3 } from "@/infrastructure/geojson";
 
 const GLOBE_RADIUS = 2;
 

@@ -9,7 +9,7 @@ import type {
   Polygon,
   MultiPolygon,
 } from "geojson";
-import { loadCountryFeatures, alpha2ToNumericCode } from "@/lib/geo/geojson-utils";
+import { loadCountryFeatures, alpha2ToNumericCode } from "@/infrastructure/geojson";
 import { cn } from "@/lib/utils/cn";
 
 function getLargestPolygon(geometry: Geometry): Geometry {

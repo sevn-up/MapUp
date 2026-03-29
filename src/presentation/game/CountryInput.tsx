@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { countries } from "@/lib/geo/countries";
+import { countries } from "@/domain/countries";
 import { cn } from "@/lib/utils/cn";
 
 interface CountryInputProps {

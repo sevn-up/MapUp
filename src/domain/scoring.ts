@@ -1,5 +1,5 @@
 import { GAME_MODES, STREET_VIEW_MAX_SCORE } from "@/lib/utils/constants";
-import type { GameMode } from "@/types/game";
+import type { GameMode } from "@/domain/types";
 
 export function calculateScore(
   mode: GameMode,
