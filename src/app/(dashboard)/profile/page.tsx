@@ -9,6 +9,8 @@ import { getLevelFromXp } from "@/domain/xp";
 import { Button } from "@/presentation/ui/Button";
 import { StreakCalendar } from "@/presentation/profile/StreakCalendar";
 import { ScoreChart } from "@/presentation/profile/ScoreChart";
+import { AchievementGrid, type AchievementData } from "@/presentation/profile/AchievementGrid";
+import { checkAchievement } from "@/domain/achievements";
 import { cn } from "@/lib/utils/cn";
 import { formatNumber } from "@/lib/utils/formatters";
 import Link from "next/link";
@@ -100,6 +102,7 @@ export default function ProfilePage() {
   const [activityMap, setActivityMap] = useState<Map<string, number>>(new Map());
   const [chartData, setChartData] = useState<{ date: string; score: number; gameMode: string }[]>([]);
   const [countryCounts, setCountryCounts] = useState<Map<string, number>>(new Map());
+  const [achievements, setAchievements] = useState<AchievementData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -170,6 +173,79 @@ export default function ProfilePage() {
         }
       }
       setCountryCounts(cMap);
+
+      // Achievements — fetch all definitions, check which are earned
+      const { data: achievementDefs } = await supabase
+        .from("achievements")
+        .select("id, name, description, icon, category, xp_reward, requirement");
+
+      const { data: userAchievements } = await supabase
+        .from("user_achievements")
+        .select("achievement_id, unlocked_at")
+        .eq("user_id", user!.id);
+
+      const unlockedSet = new Map<string, string>();
+      if (userAchievements) {
+        for (const ua of userAchievements) {
+          unlockedSet.set(ua.achievement_id, ua.unlocked_at);
+        }
+      }
+
+      if (achievementDefs && profileData) {
+        // Build stats for achievement checking
+        const shapeGames = sessions.filter((s) => s.game_mode === "country_shape");
+        const nameAllGames = sessions.filter((s) => s.game_mode === "name_all");
+        const worldleGames = sessions.filter((s) => s.game_mode === "worldle");
+        const dailyGames = sessions.filter((s) => (s.metadata as Record<string, unknown>)?.mode === "daily");
+
+        const userStats = {
+          totalGamesPlayed: sessions.length,
+          currentStreak: profileData.current_streak,
+          longestStreak: profileData.longest_streak,
+          level: profileData.level,
+          friendCount: 0,
+          dailyGamesCompleted: dailyGames.length,
+          shapeQuiz: {
+            bestScore: shapeGames.length > 0 ? Math.max(...shapeGames.map((s) => s.correct_count)) : 0,
+            maxPossible: shapeGames.length > 0 ? Math.max(...shapeGames.map((s) => s.total_count)) : 0,
+            uniqueCorrect: cMap.size,
+          },
+          nameAll: {
+            bestCount: nameAllGames.length > 0 ? Math.max(...nameAllGames.map((s) => s.correct_count)) : 0,
+            bestTimeSeconds: 300,
+          },
+          worldle: {
+            bestGuessCount: worldleGames.length > 0
+              ? Math.min(...worldleGames.filter((s) => s.correct_count > 0).map((s) => {
+                  const meta = s.metadata as Record<string, unknown>;
+                  return (meta?.guessCount as number) || 6;
+                })) : 0,
+            dailyStreak: 0,
+          },
+          streetView: { bestDistanceKm: 0, perfectRounds: false, continentsCovered: 0 },
+        };
+
+        const achievementList: AchievementData[] = achievementDefs.map((a) => {
+          const alreadyUnlocked = unlockedSet.has(a.id);
+          const earned = alreadyUnlocked || checkAchievement(a, userStats);
+
+          // Auto-unlock newly earned achievements
+          if (earned && !alreadyUnlocked) {
+            supabase.from("user_achievements").insert({
+              user_id: user!.id,
+              achievement_id: a.id,
+            }).then(() => {});
+          }
+
+          return {
+            ...a,
+            unlocked: earned,
+            unlocked_at: unlockedSet.get(a.id),
+          };
+        });
+
+        setAchievements(achievementList);
+      }
 
       setLoading(false);
     }
@@ -287,6 +363,16 @@ export default function ProfilePage() {
           </div>
         )}
       </motion.div>
+
+      {/* Achievements */}
+      {achievements.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
+          <h2 className="mb-3 text-xs font-medium uppercase tracking-widest text-green/60">Achievements</h2>
+          <div className="rounded-2xl border border-green/10 bg-navy-card p-4">
+            <AchievementGrid achievements={achievements} />
+          </div>
+        </motion.div>
+      )}
 
       {/* Score Progression */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
