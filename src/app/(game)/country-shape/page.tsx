@@ -4,6 +4,7 @@ import { useEffect, useCallback, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCountryShapeGame, QUIZ_CATEGORIES, type QuizCategory } from "@/application/useShapeQuiz";
 import { useGlobeStore } from "@/application/useGlobe";
+import { useGameSave } from "@/application/useGameSave";
 import { CountryShape } from "@/presentation/game/CountryShape";
 import { CountryInput } from "@/presentation/game/CountryInput";
 import { ScoreDisplay } from "@/presentation/game/ScoreDisplay";
@@ -300,10 +301,23 @@ function GameScreen() {
 }
 
 function ResultsScreen() {
-  const { score, totalRounds, guesses, resetGame } = useCountryShapeGame();
+  const { score, totalRounds, guesses, resetGame, category } = useCountryShapeGame();
   const { reset: resetGlobe } = useGlobeStore();
+  const { saveGame } = useGameSave();
 
   const percentage = Math.round((score / totalRounds) * 100);
+
+  // Save game result on mount
+  useEffect(() => {
+    saveGame({
+      gameMode: "country_shape",
+      score,
+      maxScore: totalRounds,
+      correctCount: score,
+      totalCount: totalRounds,
+      metadata: { category, guesses: guesses.map(g => ({ guess: g.guess, answer: g.answer.code, correct: g.isCorrect })) },
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePlayAgain = () => {
     resetGlobe();

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useCallback, useState } from "react";
+import { useGameSave } from "@/application/useGameSave";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWorldle, generateShareText } from "@/application/useWorldle";
 import { useGlobeStore } from "@/application/useGlobe";
@@ -156,9 +157,24 @@ function GameScreen() {
 }
 
 function ResultBanner() {
-  const { targetCountry, guesses, isWon, reset } = useWorldle();
+  const { targetCountry, guesses, isWon, reset, mode } = useWorldle();
   const { reset: resetGlobe } = useGlobeStore();
+  const { saveGame } = useGameSave();
   const [copied, setCopied] = useState(false);
+
+  // Save game result
+  useEffect(() => {
+    if (!targetCountry) return;
+    saveGame({
+      gameMode: "worldle",
+      score: isWon ? Math.max(0, 1000 - (guesses.length - 1) * 150) : 0,
+      maxScore: 1000,
+      correctCount: isWon ? 1 : 0,
+      totalCount: 1,
+      metadata: { mode, guessCount: guesses.length, target: targetCountry.code },
+      isDaily: mode === "daily",
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!targetCountry) return null;
 

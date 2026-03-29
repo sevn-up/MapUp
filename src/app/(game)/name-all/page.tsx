@@ -4,6 +4,7 @@ import { useEffect, useCallback, useState, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNameAllGame, NAME_ALL_CATEGORIES, type NameAllCategory } from "@/application/useNameAll";
 import { useGlobeStore } from "@/application/useGlobe";
+import { useGameSave } from "@/application/useGameSave";
 import { useCountdown } from "@/hooks/useCountdown";
 import { GameTimer } from "@/presentation/game/GameTimer";
 import { CountryInput } from "@/presentation/game/CountryInput";
@@ -250,8 +251,9 @@ function GameScreen() {
 }
 
 function ResultsScreen() {
-  const { pool, namedCodes, resetGame } = useNameAllGame();
+  const { pool, namedCodes, resetGame, category, timeLimitSeconds } = useNameAllGame();
   const { reset: resetGlobe, highlightCountry, flyToCountry } = useGlobeStore();
+  const { saveGame } = useGameSave();
 
   const named = pool.filter((c) => namedCodes.has(c.code));
   const missed = pool.filter((c) => !namedCodes.has(c.code));
@@ -259,9 +261,18 @@ function ResultsScreen() {
 
   const [showTab, setShowTab] = useState<"named" | "missed">("missed");
 
-  // Highlight missed countries in red on the globe
+  // Highlight missed and save game
   useEffect(() => {
     missed.forEach((c) => highlightCountry(c.code, "#ff5252"));
+    saveGame({
+      gameMode: "name_all",
+      score: named.length,
+      maxScore: pool.length,
+      correctCount: named.length,
+      totalCount: pool.length,
+      timeSeconds: timeLimitSeconds,
+      metadata: { category, named: named.map(c => c.code) },
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePlayAgain = () => {
