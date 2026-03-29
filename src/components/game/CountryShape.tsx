@@ -1,10 +1,44 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { geoMercator, geoPath } from "d3-geo";
-import type { FeatureCollection, Feature, Geometry } from "geojson";
+import { geoMercator, geoPath, geoArea } from "d3-geo";
+import type { FeatureCollection, Feature, Geometry, Polygon, MultiPolygon } from "geojson";
 import { loadCountryFeatures, alpha2ToNumericCode } from "@/lib/geo/geojson-utils";
 import { cn } from "@/lib/utils/cn";
+
+/**
+ * For MultiPolygon countries with distant territories (e.g., France with
+ * French Guiana), extract only the largest polygon so the silhouette
+ * shows the recognizable mainland shape rather than zooming out to fit
+ * everything.
+ */
+function getLargestPolygon(geometry: Geometry): Geometry {
+  if (geometry.type !== "MultiPolygon") return geometry;
+
+  const multi = geometry as MultiPolygon;
+  if (multi.coordinates.length <= 1) return geometry;
+
+  let largestArea = -1;
+  let largestCoords = multi.coordinates[0];
+
+  for (const polygonCoords of multi.coordinates) {
+    const poly: Polygon = { type: "Polygon", coordinates: polygonCoords };
+    const area = geoArea(poly);
+    if (area > largestArea) {
+      largestArea = area;
+      largestCoords = polygonCoords;
+    }
+  }
+
+  // If the largest polygon is >80% of total area, just show it.
+  // Otherwise show the full multi (e.g., Indonesia where islands matter)
+  const totalArea = geoArea(geometry);
+  if (largestArea / totalArea > 0.3) {
+    return { type: "Polygon", coordinates: largestCoords } as Polygon;
+  }
+
+  return geometry;
+}
 
 interface CountryShapeProps {
   countryCode: string;
@@ -55,11 +89,20 @@ export function CountryShape({
 
   const svgPath = useMemo(() => {
     if (!feature) return null;
-    // Add padding so the shape doesn't touch edges
-    const padding = size * 0.08;
+
+    // Extract the largest polygon for countries with distant territories
+    const mainlandGeometry = getLargestPolygon(feature.geometry);
+    const mainlandFeature: Feature<Geometry> = {
+      ...feature,
+      geometry: mainlandGeometry,
+    };
+
+    const padding = size * 0.1;
     const inner = size - padding * 2;
-    const projection = geoMercator().fitSize([inner, inner], feature);
+    const projection = geoMercator().fitSize([inner, inner], mainlandFeature);
     const pathGenerator = geoPath().projection(projection);
+
+    // Render the full feature (including islands) with the mainland-fitted projection
     const d = pathGenerator(feature);
     return d || "";
   }, [feature, size]);
