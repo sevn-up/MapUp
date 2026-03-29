@@ -20,7 +20,7 @@ const games = [
     href: "/name-all",
     title: "Name All",
     description: "Name all 197 countries against the clock",
-    ready: false,
+    ready: true,
   },
   {
     href: "/worldle",

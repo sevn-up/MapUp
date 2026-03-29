@@ -114,6 +114,17 @@ function GameScreen() {
   const [shaking, setShaking] = useState(false);
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
+  // Enter key advances to next country when answer is revealed
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Enter" && revealed) {
+        nextRound();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [revealed, nextRound]);
+
   // Stop auto-rotation during game
   useEffect(() => {
     setAutoRotate(false);

@@ -107,6 +107,7 @@ function easeInOutCubic(t: number): number {
 
 export function GlobeScene() {
   const autoRotate = useGlobeStore((s) => s.autoRotate);
+  const setAutoRotate = useGlobeStore((s) => s.setAutoRotate);
   const arcs = useGlobeStore((s) => s.arcs);
 
   return (
@@ -150,6 +151,7 @@ export function GlobeScene() {
         dampingFactor={0.08}
         enableDamping
         rotateSpeed={0.5}
+        onStart={() => { if (autoRotate) setAutoRotate(false); }}
       />
     </>
   );

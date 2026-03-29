@@ -143,6 +143,8 @@ function ScreenProjector({
 }
 
 function HomeGlobeScene({ positionsRef }: { positionsRef: React.MutableRefObject<{ x: number; y: number; visible: boolean }[]> }) {
+  const [spinning, setSpinning] = useState(true);
+
   return (
     <>
       <ambientLight intensity={0.4} color="#c0d0e0" />
@@ -163,11 +165,12 @@ function HomeGlobeScene({ positionsRef }: { positionsRef: React.MutableRefObject
         enableZoom={true}
         minDistance={3}
         maxDistance={10}
-        autoRotate
+        autoRotate={spinning}
         autoRotateSpeed={0.4}
         dampingFactor={0.08}
         enableDamping
         rotateSpeed={0.5}
+        onStart={() => { if (spinning) setSpinning(false); }}
       />
     </>
   );
