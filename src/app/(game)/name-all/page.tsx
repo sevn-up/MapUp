@@ -15,6 +15,7 @@ import { formatNumber } from "@/lib/utils/formatters";
 
 function StartScreen() {
   const startGame = useNameAllGame((s) => s.startGame);
+  const resetGlobe = useGlobeStore((s) => s.reset);
   const [category, setCategory] = useState<NameAllCategory>("all");
   const [timeMinutes, setTimeMinutes] = useState(10);
 
@@ -86,7 +87,7 @@ function StartScreen() {
       </div>
 
       <Button
-        onClick={() => startGame(timeMinutes, category)}
+        onClick={() => { resetGlobe(); startGame(timeMinutes, category); }}
         size="lg"
         className="w-full"
       >
@@ -107,7 +108,7 @@ function GameScreen() {
     timeLimitSeconds,
   } = useNameAllGame();
 
-  const { highlightCountry, flyToCountry, setAutoRotate, reset: resetGlobe } = useGlobeStore();
+  const { highlightCountry, flyToCountry, setAutoRotate } = useGlobeStore();
   const { timeLeft, isExpired, start } = useCountdown(timeLimitSeconds);
 
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
@@ -115,9 +116,8 @@ function GameScreen() {
   const [alreadyMsg, setAlreadyMsg] = useState(false);
   const feedbackTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // Reset globe and start timer
+  // Start timer and stop globe spin
   useEffect(() => {
-    resetGlobe();
     start();
     setAutoRotate(false);
     return () => setAutoRotate(true);

@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils/cn";
 
 function StartScreen() {
   const startGame = useCountryShapeGame((s) => s.startGame);
+  const resetGlobe = useGlobeStore((s) => s.reset);
   const [selectedCategory, setSelectedCategory] = useState<QuizCategory>("random");
   const [rounds, setRounds] = useState(10);
 
@@ -84,7 +85,10 @@ function StartScreen() {
 
       {/* Start */}
       <Button
-        onClick={() => startGame(rounds, selectedCategory)}
+        onClick={() => {
+          resetGlobe();
+          startGame(rounds, selectedCategory);
+        }}
         size="lg"
         className="w-full"
       >
@@ -107,17 +111,12 @@ function GameScreen() {
     nextRound,
   } = useCountryShapeGame();
 
-  const { flyToCountry, highlightCountry, setAutoRotate, reset: resetGlobe } = useGlobeStore();
+  const { flyToCountry, highlightCountry, setAutoRotate } = useGlobeStore();
 
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
   const [confettiTrigger, setConfettiTrigger] = useState(0);
   const [shaking, setShaking] = useState(false);
   const feedbackTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  // Reset globe highlights when game screen mounts
-  useEffect(() => {
-    resetGlobe();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Enter key advances to next country when answer is revealed
   useEffect(() => {

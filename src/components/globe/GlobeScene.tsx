@@ -74,10 +74,10 @@ export function GlobeScene() {
 
   return (
     <>
-      {/* Lighting */}
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[5, 3, 5]} intensity={0.8} color="#ffffff" />
-      <directionalLight position={[-5, -3, -5]} intensity={0.3} color="#ffffff" />
+      {/* Lighting — bright enough to see the texture clearly */}
+      <ambientLight intensity={1.0} />
+      <directionalLight position={[5, 3, 5]} intensity={1.0} color="#ffffff" />
+      <directionalLight position={[-5, -3, -5]} intensity={0.5} color="#ffffff" />
 
       {/* Textured Earth */}
       <EarthSphere />
