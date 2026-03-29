@@ -20,19 +20,19 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 border-b border-green/10 bg-navy/80 backdrop-blur-xl">
+    <nav className="pointer-events-none fixed top-0 left-0 right-0 z-50 border-b border-green/10 bg-navy/80 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
         {/* Logo */}
         <Link
           href="/"
-          className="text-xl font-bold tracking-tight text-white"
+          className="pointer-events-auto text-xl font-bold tracking-tight text-white"
           onClick={() => setMobileOpen(false)}
         >
           Map<span className="text-green">Up</span>
         </Link>
 
         {/* Desktop nav */}
-        <div className="hidden items-center gap-1 md:flex">
+        <div className="pointer-events-auto hidden items-center gap-1 md:flex">
           {navLinks.map((link) => {
             const isActive = pathname === link.href;
             return (
@@ -60,7 +60,7 @@ export function Navbar() {
         </div>
 
         {/* Right side */}
-        <div className="flex items-center gap-3">
+        <div className="pointer-events-auto flex items-center gap-3">
           {loading ? (
             <div className="h-8 w-8 animate-pulse rounded-full bg-navy-lighter" />
           ) : user ? (
@@ -112,7 +112,7 @@ export function Navbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden border-t border-green/5 bg-navy/95 backdrop-blur-xl md:hidden"
+            className="pointer-events-auto overflow-hidden border-t border-green/5 bg-navy/95 backdrop-blur-xl md:hidden"
           >
             <div className="space-y-1 px-4 py-3">
               {navLinks.map((link) => (

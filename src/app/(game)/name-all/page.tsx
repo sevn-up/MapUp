@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useCallback, useState, useRef } from "react";
+import { useEffect, useCallback, useState, useRef, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNameAllGame, NAME_ALL_CATEGORIES, type NameAllCategory } from "@/hooks/useNameAllGame";
 import { useGlobeStore } from "@/hooks/useGlobeStore";
 import { useCountdown } from "@/hooks/useCountdown";
 import { GameTimer } from "@/components/game/GameTimer";
+import { CountryInput } from "@/components/game/CountryInput";
 import { FeedbackOverlay } from "@/components/game/FeedbackOverlay";
 import { ConfettiEffect } from "@/components/game/ConfettiEffect";
 import { Button } from "@/components/ui/Button";
@@ -109,11 +110,9 @@ function GameScreen() {
   const { highlightCountry, flyToCountry, setAutoRotate } = useGlobeStore();
   const { timeLeft, isExpired, start } = useCountdown(timeLimitSeconds);
 
-  const [inputValue, setInputValue] = useState("");
   const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
   const [confettiTrigger, setConfettiTrigger] = useState(0);
   const [alreadyMsg, setAlreadyMsg] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
   const feedbackTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Start timer and stop globe spin
@@ -128,11 +127,6 @@ function GameScreen() {
     if (isExpired) endGame();
   }, [isExpired, endGame]);
 
-  // Focus input
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
   const clearFeedback = useCallback(() => {
     if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
     feedbackTimer.current = setTimeout(() => {
@@ -141,17 +135,11 @@ function GameScreen() {
     }, 600);
   }, []);
 
-  const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
-      const value = inputValue.trim();
-      if (!value) return;
-
+  const handleGuess = useCallback(
+    (value: string) => {
       const result = submitGuess(value);
-      setInputValue("");
 
       if (result.matched) {
-        // Correct!
         highlightCountry(result.matched.code, "#00e676");
         flyToCountry(result.matched.lat, result.matched.lng);
         setFeedback("correct");
@@ -166,9 +154,8 @@ function GameScreen() {
       }
 
       clearFeedback();
-      inputRef.current?.focus();
     },
-    [inputValue, submitGuess, highlightCountry, flyToCountry, clearFeedback]
+    [submitGuess, highlightCountry, flyToCountry, clearFeedback]
   );
 
   const named = namedCodes.size;
@@ -202,29 +189,14 @@ function GameScreen() {
         />
       </div>
 
-      {/* Input */}
-      <form onSubmit={handleSubmit} className="mb-4">
-        <input
-          ref={inputRef}
-          type="text"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+      {/* Input with autocomplete */}
+      <div className="mb-4">
+        <CountryInput
+          onSubmit={handleGuess}
           placeholder="Type a country name..."
-          autoComplete="off"
-          autoCorrect="off"
-          spellCheck={false}
-          className={cn(
-            "w-full rounded-xl border bg-navy px-4 py-3 text-lg text-white",
-            "placeholder:text-slate-600 transition-all",
-            "focus:shadow-[0_0_15px_rgba(0,230,118,0.1)]",
-            feedback === "correct"
-              ? "border-green/50"
-              : feedback === "wrong"
-                ? "border-wrong/50"
-                : "border-green/20 focus:border-green"
-          )}
+          excludeCodes={Array.from(namedCodes)}
         />
-      </form>
+      </div>
 
       {/* Status message */}
       <div className="mb-4 h-8 text-center text-sm">

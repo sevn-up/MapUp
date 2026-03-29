@@ -38,50 +38,48 @@ const games = [
 
 export default function HomePage() {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-navy">
-      {/* Full-screen 3D Globe — fills behind navbar */}
+    <div className="relative h-screen -mt-16 overflow-hidden bg-navy">
+      {/* Full-screen 3D Globe */}
       <div className="absolute inset-0">
         <HomeGlobe />
       </div>
 
-      {/* Gradient overlay at bottom for readability */}
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-80 bg-gradient-to-t from-navy via-navy/80 to-transparent" />
+      {/* Gradient overlay for readability */}
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-navy via-navy/70 to-transparent" />
 
-      {/* Header content */}
-      <div className="relative z-10 flex flex-col items-center pt-20 sm:pt-28">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center"
-        >
-          <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-7xl">
-            Map<span className="text-green">Up</span>
-          </h1>
-          <p className="mt-3 text-sm text-slate-500 sm:text-base">
-            Spin the globe. Pick a game. Test your world knowledge.
-          </p>
-        </motion.div>
-      </div>
+      {/* Content — flexed to fill viewport, pointer-events pass through to globe */}
+      <div className="pointer-events-none relative z-10 flex h-full flex-col">
+        {/* Title — centered */}
+        <div className="flex flex-1 flex-col items-center justify-center pb-8">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center"
+          >
+            <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-6xl">
+              Map<span className="text-green">Up</span>
+            </h1>
+            <p className="mt-2 text-sm text-slate-500">
+              Spin the globe. Pick a game. Test your world knowledge.
+            </p>
+          </motion.div>
+        </div>
 
-      {/* Bottom game mode bar */}
-      <div className="absolute inset-x-0 bottom-0 z-10 p-4 sm:p-6">
+        {/* Game mode bar — pinned to bottom, no scroll needed */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.5 }}
-          className="mx-auto max-w-3xl"
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="pointer-events-auto shrink-0 px-4 pb-4 sm:px-6 sm:pb-6"
         >
-          <div className="rounded-2xl border border-green/15 bg-navy/90 p-3 backdrop-blur-xl sm:p-4">
-            <div className="mb-3 px-1 text-xs font-medium uppercase tracking-widest text-green/60">
-              Game Modes
-            </div>
+          <div className="mx-auto max-w-3xl rounded-2xl border border-green/15 bg-navy/90 p-3 backdrop-blur-xl">
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
               {games.map((game) => (
                 <Link
                   key={game.href}
                   href={game.href}
-                  className={`group relative rounded-xl border p-3 transition-all sm:p-4 ${
+                  className={`group relative rounded-xl border p-3 transition-all ${
                     game.ready
                       ? "border-green/20 bg-green/5 hover:bg-green/10 hover:border-green/40 hover:shadow-[0_0_25px_rgba(0,230,118,0.08)]"
                       : "border-white/5 bg-white/[0.02] hover:bg-white/5"
@@ -103,14 +101,9 @@ export default function HomePage() {
                       {game.title}
                     </span>
                   </div>
-                  <p className="mt-1.5 text-xs text-slate-500 leading-snug">
+                  <p className="mt-1 text-xs text-slate-500 leading-snug">
                     {game.description}
                   </p>
-                  {game.ready && (
-                    <div className="mt-2 text-[10px] font-bold uppercase tracking-wider text-green/50 group-hover:text-green/80">
-                      Play &rarr;
-                    </div>
-                  )}
                 </Link>
               ))}
             </div>

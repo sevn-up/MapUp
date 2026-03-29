@@ -20,7 +20,7 @@ export default function GameLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-screen flex-col lg:flex-row">
+    <div className="flex h-[calc(100vh-4rem)] flex-col lg:flex-row">
       {/* 3D Globe Panel */}
       <div className="globe-container relative h-[40vh] w-full shrink-0 lg:h-full lg:w-1/2">
         <Globe />
