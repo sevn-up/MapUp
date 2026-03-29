@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef } from "react";
 import { useAuth } from "@/presentation/providers/AuthProvider";
 import { useSupabase } from "@/presentation/providers/SupabaseProvider";
 import { calculateGameXp, getLevelFromXp } from "@/domain/xp";
-import { calculateScore } from "@/domain/scoring";
 import type { GameMode } from "@/domain/types";
 
 interface SaveGameParams {
@@ -36,6 +35,7 @@ export function useGameSave() {
   const supabase = useSupabase();
   const [saving, setSaving] = useState(false);
   const [lastSave, setLastSave] = useState<SaveResult | null>(null);
+  const savedRef = useRef(false); // Prevent double saves from React Strict Mode
 
   const saveGame = useCallback(
     async (params: SaveGameParams): Promise<SaveResult> => {
@@ -45,6 +45,12 @@ export function useGameSave() {
         setLastSave(result);
         return result;
       }
+
+      // Guard against double-calls (React Strict Mode)
+      if (savedRef.current) {
+        return lastSave || { success: false, xpEarned: 0, streakDays: 0 };
+      }
+      savedRef.current = true;
 
       setSaving(true);
 
@@ -148,5 +154,10 @@ export function useGameSave() {
     [user, supabase]
   );
 
-  return { saveGame, saving, lastSave };
+  const resetSaveGuard = useCallback(() => {
+    savedRef.current = false;
+    setLastSave(null);
+  }, []);
+
+  return { saveGame, saving, lastSave, resetSaveGuard };
 }
