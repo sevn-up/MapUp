@@ -250,7 +250,7 @@ function GameScreen() {
 
 function ResultsScreen() {
   const { pool, namedCodes, resetGame } = useNameAllGame();
-  const { reset: resetGlobe, highlightCountry } = useGlobeStore();
+  const { reset: resetGlobe, highlightCountry, flyToCountry } = useGlobeStore();
 
   const named = pool.filter((c) => namedCodes.has(c.code));
   const missed = pool.filter((c) => !namedCodes.has(c.code));
@@ -334,22 +334,28 @@ function ResultsScreen() {
         {(showTab === "named" ? named : missed)
           .sort((a, b) => a.name.localeCompare(b.name))
           .map((c, i) => (
-            <motion.div
+            <motion.button
               key={c.code}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: Math.min(i * 0.02, 0.5) }}
+              onClick={() => flyToCountry(c.lat, c.lng)}
               className={cn(
-                "flex items-center gap-2.5 rounded-lg px-3 py-2",
+                "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-colors",
                 showTab === "named"
-                  ? "bg-green/5 border border-green/10"
-                  : "bg-wrong/5 border border-wrong/10"
+                  ? "bg-green/5 border border-green/10 hover:bg-green/10"
+                  : "bg-wrong/5 border border-wrong/10 hover:bg-wrong/10",
+                "cursor-pointer"
               )}
             >
               <span className="text-base">{c.flag}</span>
               <span className="flex-1 text-sm text-white">{c.name}</span>
               <span className="text-xs text-slate-600">{c.continent}</span>
-            </motion.div>
+              <svg className="h-3.5 w-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </motion.button>
           ))}
       </div>
 

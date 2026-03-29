@@ -51,9 +51,8 @@ function buildLineGeometry(
 }
 
 /**
- * Build a dense fill by rendering borders at many slightly offset radii,
- * plus inset versions scaled slightly toward center — creates visible
- * filled area without triangulation artifacts.
+ * Build a subtle fill by rendering borders at a few offset radii
+ * plus 2-3 gentle inset layers. Keeps it clean, no fractal look.
  */
 function buildFillGeometry(
   rings: Position[][],
@@ -61,10 +60,9 @@ function buildFillGeometry(
 ): THREE.BufferGeometry {
   const points: THREE.Vector3[] = [];
 
-  // Multiple radii layers for thickness
-  const layerCount = 8;
-  for (let l = 0; l < layerCount; l++) {
-    const r = radius + l * 0.0008;
+  // 3 radii layers for border thickness
+  for (let l = 0; l < 3; l++) {
+    const r = radius + l * 0.001;
     for (const ring of rings) {
       const verts = coordsToPoints(ring, r);
       for (let i = 0; i < verts.length - 1; i++) {
@@ -73,28 +71,21 @@ function buildFillGeometry(
     }
   }
 
-  // Inset rings — scale coordinates slightly toward polygon centroid
-  // This fills the interior rather than just tracing the border
+  // 2 gentle inset layers for a subtle fill effect
   for (const ring of rings) {
     if (ring.length < 4) continue;
-    // Compute centroid of this ring
+    const pts = ring.slice(0, -1);
     let cLat = 0, cLng = 0;
-    const pts = ring.slice(0, -1); // remove closing duplicate
-    for (const [lng, lat] of pts) {
-      cLat += lat;
-      cLng += lng;
-    }
+    for (const [lng, lat] of pts) { cLat += lat; cLng += lng; }
     cLat /= pts.length;
     cLng /= pts.length;
 
-    // Create inset versions at different scales
-    const scales = [0.92, 0.84, 0.76, 0.68, 0.60, 0.50, 0.38, 0.25];
-    for (const s of scales) {
-      const insetRing: Position[] = pts.map(([lng, lat]) => [
+    for (const s of [0.85, 0.65]) {
+      const inset: Position[] = pts.map(([lng, lat]) => [
         cLng + (lng - cLng) * s,
         cLat + (lat - cLat) * s,
       ]);
-      const verts = coordsToPoints(insetRing, radius + 0.002);
+      const verts = coordsToPoints(inset, radius + 0.002);
       for (let i = 0; i < verts.length - 1; i++) {
         points.push(verts[i], verts[i + 1]);
       }
