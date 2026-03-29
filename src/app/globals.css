@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+@theme {
+  /* Deep navy backgrounds */
+  --color-navy: #0a0f1e;
+  --color-navy-light: #111827;
+  --color-navy-lighter: #1a2332;
+  --color-navy-card: #131c2e;
+
+  /* Action green accents */
+  --color-green: #00e676;
+  --color-green-light: #69f0ae;
+  --color-green-dark: #00c853;
+  --color-green-dim: #00e67633;
+
+  /* Semantic aliases */
+  --color-surface: #0a0f1e;
+  --color-surface-light: #111827;
+  --color-surface-lighter: #1a2332;
+  --color-surface-card: #131c2e;
+
+  --color-primary: #00e676;
+  --color-primary-light: #69f0ae;
+  --color-primary-dark: #00c853;
+
+  --color-accent: #00e676;
+  --color-accent-light: #69f0ae;
+
+  --color-correct: #00e676;
+  --color-wrong: #ff5252;
+  --color-warning: #ffab40;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--color-navy);
+  color: #c9d1d9;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Globe canvas */
+.globe-container canvas {
+  outline: none;
+}
+
+/* Smooth input focus */
+input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-green);
+}
+
+/* Game card hover */
+.game-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.game-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px -12px rgba(0, 230, 118, 0.15);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #1a2332;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #243040;
+}
+
+/* Selection color */
+::selection {
+  background: rgba(0, 230, 118, 0.2);
+  color: #fff;
+}
