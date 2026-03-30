@@ -75,9 +75,10 @@ export const usePopulationGame = create<PopulationGameState>((set, get) => ({
     const { countryA, countryB, revealed, mode } = get();
     if (!countryA || !countryB || revealed) return false;
 
-    const bHigher = countryB.population > countryA.population;
-    const isCorrect =
-      answer === "higher" ? bHigher : !bHigher;
+    // Ties count as correct for either answer
+    const tied = countryA.population === countryB.population;
+    const bHigher = countryB.population >= countryA.population;
+    const isCorrect = tied || (answer === "higher" ? bHigher : !bHigher);
 
     const updates: Partial<PopulationGameState> = {
       revealed: true,
