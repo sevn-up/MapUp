@@ -102,7 +102,7 @@ export default function ProfilePage() {
   const [totalGames, setTotalGames] = useState(0);
   const [activityMap, setActivityMap] = useState<Map<string, number>>(new Map());
   const [chartData, setChartData] = useState<{ date: string; score: number; gameMode: string }[]>([]);
-  const [countryCounts, setCountryCounts] = useState<Map<string, number>>(new Map());
+  const [countryAccuracy, setCountryAccuracy] = useState<Map<string, { correct: number; total: number }>>(new Map());
   const [achievements, setAchievements] = useState<AchievementData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -154,26 +154,35 @@ export default function ProfilePage() {
       // Chart data
       setChartData(sessions.map((s) => ({ date: s.created_at, score: s.score, gameMode: s.game_mode })).reverse());
 
-      // Country knowledge extraction
-      const cMap = new Map<string, number>();
+      // Country accuracy extraction — track correct AND total attempts per country
+      const correctMap = new Map<string, number>();
+      const attemptsMap = new Map<string, number>();
       for (const s of sessions) {
         const meta = s.metadata as Record<string, unknown>;
         if (s.game_mode === "country_shape" && Array.isArray(meta?.guesses)) {
           for (const g of meta.guesses as { answer: string; correct: boolean }[]) {
-            if (g.correct) cMap.set(g.answer, (cMap.get(g.answer) || 0) + 1);
+            attemptsMap.set(g.answer, (attemptsMap.get(g.answer) || 0) + 1);
+            if (g.correct) correctMap.set(g.answer, (correctMap.get(g.answer) || 0) + 1);
           }
         }
         if (s.game_mode === "name_all" && Array.isArray(meta?.named)) {
           for (const code of meta.named as string[]) {
-            cMap.set(code, (cMap.get(code) || 0) + 1);
+            correctMap.set(code, (correctMap.get(code) || 0) + 1);
+            attemptsMap.set(code, (attemptsMap.get(code) || 0) + 1);
           }
         }
-        if (s.game_mode === "worldle" && meta?.target && s.correct_count > 0) {
+        if (s.game_mode === "worldle" && meta?.target) {
           const code = meta.target as string;
-          cMap.set(code, (cMap.get(code) || 0) + 1);
+          attemptsMap.set(code, (attemptsMap.get(code) || 0) + 1);
+          if (s.correct_count > 0) correctMap.set(code, (correctMap.get(code) || 0) + 1);
         }
       }
-      setCountryCounts(cMap);
+      // Build accuracy map
+      const accMap = new Map<string, { correct: number; total: number }>();
+      for (const [code, total] of attemptsMap) {
+        accMap.set(code, { correct: correctMap.get(code) || 0, total });
+      }
+      setCountryAccuracy(accMap);
 
       // Achievements — fetch all definitions, check which are earned
       const { data: achievementDefs } = await supabase
@@ -229,7 +238,7 @@ export default function ProfilePage() {
           shapeQuiz: {
             bestScore: shapeGames.length > 0 ? Math.max(...shapeGames.map((s) => s.correct_count)) : 0,
             maxPossible: shapeGames.length > 0 ? Math.max(...shapeGames.map((s) => s.total_count)) : 0,
-            uniqueCorrect: cMap.size,
+            uniqueCorrect: correctMap.size,
           },
           nameAll: {
             bestCount: nameAllGames.length > 0 ? Math.max(...nameAllGames.map((s) => s.correct_count)) : 0,
@@ -343,7 +352,7 @@ export default function ProfilePage() {
       {/* Knowledge Globe */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
         <h2 className="mb-3 text-xs font-medium uppercase tracking-widest text-green/60">World Knowledge</h2>
-        <KnowledgeGlobe countryCounts={countryCounts} totalDiscovered={countryCounts.size} />
+        <KnowledgeGlobe countryAccuracy={countryAccuracy} />
       </motion.div>
 
       {/* Streak Calendar */}

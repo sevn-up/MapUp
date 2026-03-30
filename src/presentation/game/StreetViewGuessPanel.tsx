@@ -1,8 +1,10 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useEffect } from "react";
 import { useStreetViewGame } from "@/application/useStreetView";
+import { useCountdown } from "@/hooks/useCountdown";
 import { GuessMap } from "./GuessMap";
+import { GameTimer } from "./GameTimer";
 import { formatNumber } from "@/lib/utils/formatters";
 import { cn } from "@/lib/utils/cn";
 import { Button } from "@/presentation/ui/Button";
@@ -22,12 +24,32 @@ export function StreetViewGuessPanel() {
     isRoundRevealed,
     isPlaying,
     isFinished,
+    roundTimeLimit,
     submitGuess,
     nextRound,
   } = useStreetViewGame();
 
   const round = isPlaying ? rounds[currentRound] : null;
   const guessPos = round?.guess ?? null;
+
+  // Round countdown timer
+  const hasTimer = isPlaying && roundTimeLimit !== null && roundTimeLimit > 0;
+  const { timeLeft, isExpired, start: startTimer, reset: resetTimer } = useCountdown(roundTimeLimit ?? 60);
+
+  // Start timer on each new round
+  useEffect(() => {
+    if (hasTimer && !isRoundRevealed) {
+      resetTimer(roundTimeLimit!);
+      startTimer();
+    }
+  }, [currentRound, hasTimer, isRoundRevealed]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-submit when timer expires
+  useEffect(() => {
+    if (isExpired && hasTimer && !isRoundRevealed) {
+      submitGuess(); // Submit whatever guess is placed (or null for 0 points)
+    }
+  }, [isExpired, hasTimer, isRoundRevealed]); // eslint-disable-line react-hooks/exhaustive-deps
   const currentScore = round?.score ?? 0;
   const distanceKm = round?.distanceKm ?? 0;
 
@@ -47,13 +69,14 @@ export function StreetViewGuessPanel() {
       }));
   }, [isFinished, rounds]);
 
-  // Start screen — empty globe
+  // Start screen — auto-rotating globe
   if (!isPlaying && !isFinished) {
     return (
       <GuessMap
         onGuess={() => {}}
         guessPosition={null}
         interactive={false}
+        autoRotate
         className="h-full w-full"
       />
     );
@@ -92,7 +115,7 @@ export function StreetViewGuessPanel() {
         className="h-full w-full"
       />
 
-      {/* Round info */}
+      {/* Round info + timer */}
       <div className="absolute top-3 left-3 z-10 flex items-center gap-3">
         <div className="rounded-lg bg-navy/80 px-3 py-1.5 backdrop-blur-sm border border-white/10">
           <span className="text-sm font-bold text-white">
@@ -104,6 +127,14 @@ export function StreetViewGuessPanel() {
             {formatNumber(totalScore)} pts
           </span>
         </div>
+        {hasTimer && !isRoundRevealed && (
+          <div className={cn(
+            "rounded-lg px-3 py-1.5 backdrop-blur-sm border",
+            timeLeft <= 10 ? "bg-wrong/20 border-wrong/30" : "bg-navy/80 border-white/10"
+          )}>
+            <GameTimer timeLeft={timeLeft} />
+          </div>
+        )}
       </div>
 
       {/* Score on reveal */}

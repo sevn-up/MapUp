@@ -17,6 +17,7 @@ interface GuessMapProps {
   revealed?: boolean;
   completedRounds?: CompletedRound[];
   interactive?: boolean;
+  autoRotate?: boolean;
   className?: string;
 }
 
@@ -30,13 +31,14 @@ export function GuessMap({
   revealed,
   completedRounds,
   interactive = true,
+  autoRotate = false,
   className,
 }: GuessMapProps) {
   const mapRef = useRef<MapRef>(null);
   const [viewState, setViewState] = useState({
-    longitude: 0,
+    longitude: 20,
     latitude: 20,
-    zoom: 1.5,
+    zoom: 1.8,
   });
 
   const handleClick = useCallback(
@@ -46,6 +48,31 @@ export function GuessMap({
     },
     [onGuess, revealed, interactive]
   );
+
+  // Auto-rotate the globe when idle (start screen)
+  useEffect(() => {
+    if (!autoRotate || !mapRef.current) return;
+    const map = mapRef.current.getMap();
+    let animationId: number;
+    let lng = viewState.longitude;
+
+    function spin() {
+      lng += 0.03;
+      if (lng > 180) lng -= 360;
+      map.setCenter([lng, viewState.latitude]);
+      animationId = requestAnimationFrame(spin);
+    }
+
+    // Start spinning after a brief delay to let the map load
+    const timeout = setTimeout(() => {
+      animationId = requestAnimationFrame(spin);
+    }, 500);
+
+    return () => {
+      clearTimeout(timeout);
+      cancelAnimationFrame(animationId);
+    };
+  }, [autoRotate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fit bounds to show both pins on reveal
   useEffect(() => {
@@ -98,7 +125,7 @@ export function GuessMap({
       <Map
         ref={mapRef}
         {...viewState}
-        onMove={(e) => setViewState(e.viewState)}
+        onMove={autoRotate ? undefined : (e) => setViewState(e.viewState)}
         onClick={handleClick}
         mapboxAccessToken={MAPBOX_TOKEN}
         mapStyle={DARK_STYLE}
@@ -106,11 +133,11 @@ export function GuessMap({
         cursor={revealed || !interactive ? "default" : "crosshair"}
         style={{ width: "100%", height: "100%" }}
         fog={{
-          color: "#0a1929",
-          "high-color": "#0d2137",
-          "horizon-blend": 0.02,
+          color: "#0d2137",
+          "high-color": "#1a4a5a",
+          "horizon-blend": 0.08,
           "space-color": "#0a1929",
-          "star-intensity": 0.3,
+          "star-intensity": 0.4,
         }}
       >
         {/* Guess pin */}

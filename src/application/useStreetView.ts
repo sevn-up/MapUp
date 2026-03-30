@@ -30,8 +30,9 @@ interface StreetViewState {
   isFinished: boolean;
   isRoundRevealed: boolean;
   totalScore: number;
+  roundTimeLimit: number | null; // null = no timer, number = seconds per round
 
-  startGame: (locations: StreetViewLocation[], totalRounds: number, difficulty: "easy" | "medium" | "hard") => void;
+  startGame: (locations: StreetViewLocation[], totalRounds: number, difficulty: "easy" | "medium" | "hard", roundTimeLimit?: number | null) => void;
   submitGuessPosition: (lat: number, lng: number) => void;
   submitGuess: () => StreetViewRound | null;
   skipCurrentLocation: () => void;
@@ -49,8 +50,9 @@ export const useStreetViewGame = create<StreetViewState>((set, get) => ({
   isFinished: false,
   isRoundRevealed: false,
   totalScore: 0,
+  roundTimeLimit: null,
 
-  startGame: (locations, totalRounds, difficulty) => {
+  startGame: (locations, totalRounds, difficulty, roundTimeLimit = null) => {
     const primary = locations.slice(0, totalRounds);
     const backups = locations.slice(totalRounds);
 
@@ -71,6 +73,7 @@ export const useStreetViewGame = create<StreetViewState>((set, get) => ({
       isFinished: false,
       isRoundRevealed: false,
       totalScore: 0,
+      roundTimeLimit,
     });
   },
 
@@ -158,5 +161,6 @@ export const useStreetViewGame = create<StreetViewState>((set, get) => ({
       isFinished: false,
       isRoundRevealed: false,
       totalScore: 0,
+      roundTimeLimit: null,
     }),
 }));

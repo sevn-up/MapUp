@@ -319,6 +319,12 @@ function ResultsScreen() {
         <p className="mt-1 text-lg text-slate-400">
           <span className="font-bold text-green">{named.length}/{pool.length}</span> countries ({percentage}%)
         </p>
+        <p className="mt-1 text-sm text-slate-500">
+          Completed in{" "}
+          <span className="font-semibold text-white">
+            {Math.floor(elapsedSeconds / 60)}:{(elapsedSeconds % 60).toString().padStart(2, "0")}
+          </span>
+        </p>
       </div>
 
       {/* Tabs */}

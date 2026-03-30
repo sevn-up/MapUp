@@ -75,6 +75,7 @@ function StartScreen() {
   const [theme, setTheme] = useState("");
   const [difficulty, setDifficulty] = useState("");
   const [numRounds, setNumRounds] = useState(5);
+  const [roundTimer, setRoundTimer] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [availableCount, setAvailableCount] = useState<number | null>(null);
@@ -123,7 +124,7 @@ function StartScreen() {
         return;
       }
 
-      startGame(locations, numRounds, (difficulty || "medium") as "easy" | "medium" | "hard");
+      startGame(locations, numRounds, (difficulty || "medium") as "easy" | "medium" | "hard", roundTimer);
     } catch {
       setError("Failed to load locations");
       setLoading(false);
@@ -250,26 +251,54 @@ function StartScreen() {
         </div>
       </div>
 
-      {/* Rounds */}
-      <div className="mb-5">
-        <div className="mb-2 text-xs font-medium uppercase tracking-wider text-green/60">
-          Rounds
+      {/* Rounds + Timer side by side */}
+      <div className="mb-5 grid grid-cols-2 gap-4">
+        <div>
+          <div className="mb-2 text-xs font-medium uppercase tracking-wider text-green/60">
+            Rounds
+          </div>
+          <div className="flex gap-1.5">
+            {[3, 5, 10].map((n) => (
+              <button
+                key={n}
+                onClick={() => setNumRounds(n)}
+                className={cn(
+                  "flex-1 rounded-lg border py-2.5 text-xs font-semibold transition-all",
+                  numRounds === n
+                    ? "border-green/40 bg-green/10 text-green"
+                    : "border-white/5 bg-white/[0.02] text-slate-400 hover:bg-white/5"
+                )}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex gap-2">
-          {[3, 5, 10].map((n) => (
-            <button
-              key={n}
-              onClick={() => setNumRounds(n)}
-              className={cn(
-                "flex-1 rounded-lg border py-2.5 text-xs font-semibold transition-all",
-                numRounds === n
-                  ? "border-green/40 bg-green/10 text-green"
-                  : "border-white/5 bg-white/[0.02] text-slate-400 hover:bg-white/5"
-              )}
-            >
-              {n}
-            </button>
-          ))}
+        <div>
+          <div className="mb-2 text-xs font-medium uppercase tracking-wider text-green/60">
+            Round Timer
+          </div>
+          <div className="flex gap-1.5">
+            {[
+              { value: null, label: "Off" },
+              { value: 30, label: "30s" },
+              { value: 60, label: "60s" },
+              { value: 90, label: "90s" },
+            ].map((t) => (
+              <button
+                key={t.label}
+                onClick={() => setRoundTimer(t.value)}
+                className={cn(
+                  "flex-1 rounded-lg border py-2.5 text-xs font-semibold transition-all",
+                  roundTimer === t.value
+                    ? "border-green/40 bg-green/10 text-green"
+                    : "border-white/5 bg-white/[0.02] text-slate-400 hover:bg-white/5"
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

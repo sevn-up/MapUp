@@ -19,9 +19,16 @@ import type { FeatureCollection } from "geojson";
 const GLOBE_RADIUS = 2;
 
 interface KnowledgeGlobeProps {
-  countryCounts: Map<string, number>;
-  totalDiscovered: number;
+  countryAccuracy: Map<string, { correct: number; total: number }>;
   className?: string;
+}
+
+function accuracyColor(correct: number, total: number): string {
+  const ratio = total > 0 ? correct / total : 0;
+  if (ratio >= 0.8) return "#00e676";  // mastered
+  if (ratio >= 0.6) return "#69f0ae";  // good
+  if (ratio >= 0.3) return "#ffab40";  // learning
+  return "#ff5252";                     // weak
 }
 
 function TexturedEarthSphere({ texturePath }: { texturePath: string }) {
@@ -56,7 +63,7 @@ function EarthSphere() {
  * Standalone country borders for the knowledge globe — doesn't use the shared globe store.
  * Highlights countries based on the countryCounts prop with solid mesh fill.
  */
-function KnowledgeBorders({ countryCounts }: { countryCounts: Map<string, number> }) {
+function KnowledgeBorders({ countryAccuracy }: { countryAccuracy: Map<string, { correct: number; total: number }> }) {
   const [features, setFeatures] = useState<FeatureCollection | null>(null);
 
   useEffect(() => {
@@ -78,12 +85,10 @@ function KnowledgeBorders({ countryCounts }: { countryCounts: Map<string, number
       const alpha2 = numId
         ? numericToAlpha2(numId)
         : resolveUndefinedFeature(feature.geometry as { type: string; coordinates: number[][][] | number[][][][] });
-      const count = alpha2 ? countryCounts.get(alpha2) : undefined;
+      const acc = alpha2 ? countryAccuracy.get(alpha2) : undefined;
 
-      if (count && count > 0) {
-        const intensity = Math.min(count / 5, 1);
-        const g = Math.round(80 + intensity * 150);
-        const color = `rgb(0, ${g}, ${Math.round(40 + intensity * 60)})`;
+      if (acc && acc.total > 0) {
+        const color = accuracyColor(acc.correct, acc.total);
 
         const rings = extractRings(feature.geometry);
         const outerRings = extractOuterRings(feature.geometry);
@@ -100,7 +105,7 @@ function KnowledgeBorders({ countryCounts }: { countryCounts: Map<string, number
       defaultGeo: buildLineGeometry(defaultRings, GLOBE_RADIUS + 0.003),
       highlightedItems: hlItems,
     };
-  }, [features, countryCounts]);
+  }, [features, countryAccuracy]);
 
   if (!features) return null;
 
@@ -125,7 +130,7 @@ function KnowledgeBorders({ countryCounts }: { countryCounts: Map<string, number
   );
 }
 
-function KnowledgeGlobeScene({ countryCounts }: { countryCounts: Map<string, number> }) {
+function KnowledgeGlobeScene({ countryAccuracy }: { countryAccuracy: Map<string, { correct: number; total: number }> }) {
   return (
     <>
       <ambientLight intensity={1.0} />
@@ -133,7 +138,7 @@ function KnowledgeGlobeScene({ countryCounts }: { countryCounts: Map<string, num
       <directionalLight position={[-5, -3, -5]} intensity={0.5} />
 
       <EarthSphere />
-      <KnowledgeBorders countryCounts={countryCounts} />
+      <KnowledgeBorders countryAccuracy={countryAccuracy} />
       <Atmosphere radius={GLOBE_RADIUS} />
 
       <Stars radius={80} depth={60} count={1500} factor={3} saturation={0} fade speed={0.1} />
@@ -151,7 +156,13 @@ function KnowledgeGlobeScene({ countryCounts }: { countryCounts: Map<string, num
   );
 }
 
-export function KnowledgeGlobe({ countryCounts, totalDiscovered, className }: KnowledgeGlobeProps) {
+export function KnowledgeGlobe({ countryAccuracy, className }: KnowledgeGlobeProps) {
+  // Count mastered countries (>80% accuracy)
+  let mastered = 0;
+  for (const [, acc] of countryAccuracy) {
+    if (acc.total > 0 && acc.correct / acc.total >= 0.8) mastered++;
+  }
+
   return (
     <div className={className}>
       <div className="relative h-[300px] w-full rounded-2xl border border-green/10 bg-navy-card overflow-hidden">
@@ -162,13 +173,19 @@ export function KnowledgeGlobe({ countryCounts, totalDiscovered, className }: Kn
           dpr={[1, 2]}
         >
           <Suspense fallback={null}>
-            <KnowledgeGlobeScene countryCounts={countryCounts} />
+            <KnowledgeGlobeScene countryAccuracy={countryAccuracy} />
           </Suspense>
         </Canvas>
 
         <div className="absolute bottom-3 left-3 rounded-lg bg-navy/80 px-3 py-1.5 backdrop-blur-sm border border-green/20">
-          <span className="text-lg font-bold text-green">{totalDiscovered}</span>
-          <span className="text-sm text-slate-400">/197 discovered</span>
+          <span className="text-lg font-bold text-green">{mastered}</span>
+          <span className="text-sm text-slate-400">/197 mastered</span>
+        </div>
+        <div className="absolute bottom-3 right-3 flex gap-2 text-[10px]">
+          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#ff5252]" />Weak</span>
+          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#ffab40]" />Learning</span>
+          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#69f0ae]" />Good</span>
+          <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#00e676]" />Mastered</span>
         </div>
       </div>
     </div>

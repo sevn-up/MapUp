@@ -27,8 +27,8 @@ export default function GameLayout({
   const isPlaying = useStreetViewGame((s) => s.isPlaying);
   const isFinished = useStreetViewGame((s) => s.isFinished);
 
-  // Show Mapbox map for the entire Street View page (start, game, results)
-  const showStreetViewMap = pathname === "/street-view";
+  // Show Mapbox guess map only when actively playing or reviewing Street View results
+  const showStreetViewMap = pathname === "/street-view" && (isPlaying || isFinished);
 
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col lg:flex-row">
@@ -38,7 +38,7 @@ export default function GameLayout({
       </div>
 
       {/* Game Content Panel */}
-      <div className={`flex-1 overflow-y-auto bg-navy-light ${showStreetViewMap ? "" : "p-6 lg:p-8"}`}>
+      <div className={`flex-1 overflow-y-auto bg-navy-light ${showStreetViewMap && isPlaying ? "" : "p-6 lg:p-8"}`}>
         {children}
       </div>
     </div>
