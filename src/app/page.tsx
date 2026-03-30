@@ -32,7 +32,7 @@ const games = [
     href: "/street-view",
     title: "Street View",
     description: "Guess locations from street imagery",
-    ready: false,
+    ready: true,
   },
 ];
 
