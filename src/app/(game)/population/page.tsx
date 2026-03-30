@@ -92,7 +92,48 @@ function StartScreen() {
 }
 
 // ---------------------------------------------------------------------------
-// GameScreen
+// Country Card
+// ---------------------------------------------------------------------------
+function CountryCard({
+  country,
+  showPopulation,
+  highlight,
+  animatePopulation,
+}: {
+  country: { flag: string; name: string; population: number };
+  showPopulation: boolean;
+  highlight?: "correct" | "wrong" | null;
+  animatePopulation?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-2xl border bg-navy p-5 text-center transition-colors duration-300",
+        highlight === "correct"
+          ? "border-green/40 shadow-[0_0_20px_rgba(0,230,118,0.1)]"
+          : highlight === "wrong"
+            ? "border-wrong/40 shadow-[0_0_20px_rgba(255,82,82,0.1)]"
+            : "border-green/10"
+      )}
+    >
+      <div className="mb-2 text-4xl">{country.flag}</div>
+      <h2 className="mb-1 text-lg font-bold text-white">{country.name}</h2>
+      <div className="text-[10px] uppercase tracking-widest text-slate-500">Population</div>
+      <div className="mt-1 text-xl font-bold">
+        {showPopulation ? (
+          <span className={highlight === "correct" ? "text-green" : highlight === "wrong" ? "text-wrong" : "text-green"}>
+            {animatePopulation ? <AnimatedCounter target={country.population} /> : formatNumber(country.population)}
+          </span>
+        ) : (
+          <span className="text-3xl text-slate-600">?</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// GameScreen — Vertical conveyor belt layout
 // ---------------------------------------------------------------------------
 function GameScreen() {
   const {
@@ -109,42 +150,35 @@ function GameScreen() {
     nextPair,
   } = usePopulationGame();
 
-  const [feedback, setFeedback] = useState<"correct" | "wrong" | null>(null);
-  const feedbackTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  // Enter key advances when revealed
+  // Keyboard controls: Arrow Up = Higher, Arrow Down = Lower, Enter = Next
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Enter" && revealed) nextPair();
+      if (revealed) {
+        if (e.key === "Enter" || e.key === "ArrowUp" || e.key === "ArrowDown") nextPair();
+        return;
+      }
+      if (e.key === "ArrowUp") submitGuess("higher");
+      if (e.key === "ArrowDown") submitGuess("lower");
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [revealed, nextPair]);
-
-  const handleGuess = (answer: "higher" | "lower") => {
-    const correct = submitGuess(answer);
-    setFeedback(correct ? "correct" : "wrong");
-    if (feedbackTimer.current) clearTimeout(feedbackTimer.current);
-    feedbackTimer.current = setTimeout(() => setFeedback(null), 1200);
-  };
+  }, [revealed, nextPair, submitGuess]);
 
   if (!countryA || !countryB) return null;
 
+  const isFinished = usePopulationGame.getState().isFinished;
+
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-sm">
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         {mode === "streak" ? (
           <div className="text-sm text-slate-500">
-            Streak{" "}
-            <span className="font-bold text-green">{streak}</span>
+            Streak <span className="font-bold text-green">{streak}</span>
           </div>
         ) : (
           <div className="text-sm text-slate-500">
-            Round{" "}
-            <span className="font-bold text-white">
-              {currentRound}/{totalRounds}
-            </span>
+            Round <span className="font-bold text-white">{currentRound}/{totalRounds}</span>
           </div>
         )}
         <div className="text-sm text-slate-500">
@@ -152,144 +186,98 @@ function GameScreen() {
         </div>
       </div>
 
-      {/* Progress bar (rounds mode only) */}
-      {mode === "rounds" && (
-        <div className="mb-5">
-          <div className="h-2 overflow-hidden rounded-full bg-navy-lighter">
-            <motion.div
-              className="h-full rounded-full bg-gradient-to-r from-green-dark to-green"
-              animate={{
-                width: `${((currentRound - 1) / totalRounds) * 100}%`,
-              }}
-              transition={{ type: "spring", damping: 20, stiffness: 100 }}
+      {/* Vertical card stack */}
+      <div className="space-y-3">
+        {/* Top: Country A (known population) */}
+        <AnimatePresence mode="popLayout">
+          <motion.div
+            key={`a-${countryA.code}`}
+            initial={{ opacity: 0, y: -40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -40 }}
+            transition={{ type: "spring", damping: 20, stiffness: 200 }}
+          >
+            <CountryCard country={countryA} showPopulation />
+          </motion.div>
+        </AnimatePresence>
+
+        {/* VS divider + streak badge */}
+        <div className="flex items-center justify-center gap-3">
+          <div className="h-px flex-1 bg-white/5" />
+          <span className="text-xs font-bold text-slate-600">VS</span>
+          {mode === "streak" && streak > 0 && (
+            <span className="rounded-full bg-green/10 border border-green/20 px-2 py-0.5 text-xs font-bold text-green">
+              {streak}
+            </span>
+          )}
+          <div className="h-px flex-1 bg-white/5" />
+        </div>
+
+        {/* Bottom: Country B (unknown population) */}
+        <AnimatePresence mode="popLayout">
+          <motion.div
+            key={`b-${countryB.code}`}
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -40 }}
+            transition={{ type: "spring", damping: 20, stiffness: 200 }}
+          >
+            <CountryCard
+              country={countryB}
+              showPopulation={revealed}
+              highlight={revealed ? (lastAnswerCorrect ? "correct" : "wrong") : null}
+              animatePopulation={revealed}
             />
-          </div>
-        </div>
-      )}
-
-      {/* Two-card layout */}
-      <div className="flex flex-col gap-4 md:flex-row">
-        {/* Country A — always revealed */}
-        <motion.div
-          key={countryA.code}
-          initial={{ opacity: 0, x: -30 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="flex-1 rounded-2xl border border-green/10 bg-navy p-6 text-center"
-        >
-          <div className="mb-3 text-5xl">{countryA.flag}</div>
-          <h2 className="mb-1 text-xl font-bold text-white">{countryA.name}</h2>
-          <div className="text-xs uppercase tracking-wider text-slate-500">
-            Population
-          </div>
-          <div className="mt-1 text-2xl font-bold text-green">
-            {formatNumber(countryA.population)}
-          </div>
-        </motion.div>
-
-        {/* VS divider */}
-        <div className="flex items-center justify-center">
-          <span className="text-lg font-bold text-slate-600">VS</span>
-        </div>
-
-        {/* Country B — revealed on guess */}
-        <motion.div
-          key={countryB.code}
-          initial={{ opacity: 0, x: 30 }}
-          animate={{ opacity: 1, x: 0 }}
-          className={cn(
-            "flex-1 rounded-2xl border bg-navy p-6 text-center transition-colors duration-300",
-            revealed
-              ? lastAnswerCorrect
-                ? "border-green/40 shadow-[0_0_30px_rgba(0,230,118,0.15)]"
-                : "border-wrong/40 shadow-[0_0_30px_rgba(255,82,82,0.15)]"
-              : "border-green/10"
-          )}
-        >
-          <div className="mb-3 text-5xl">{countryB.flag}</div>
-          <h2 className="mb-1 text-xl font-bold text-white">{countryB.name}</h2>
-          <div className="text-xs uppercase tracking-wider text-slate-500">
-            Population
-          </div>
-          <div className="mt-1 text-2xl font-bold text-white">
-            {revealed ? (
-              <span className={lastAnswerCorrect ? "text-green" : "text-wrong"}>
-                <AnimatedCounter target={countryB.population} />
-              </span>
-            ) : (
-              <span className="text-slate-600">?</span>
-            )}
-          </div>
-
-          {/* Guess buttons */}
-          {!revealed && (
-            <div className="mt-4 flex gap-3">
-              <Button
-                onClick={() => handleGuess("higher")}
-                variant="secondary"
-                className="flex-1"
-              >
-                Higher
-              </Button>
-              <Button
-                onClick={() => handleGuess("lower")}
-                variant="secondary"
-                className="flex-1"
-              >
-                Lower
-              </Button>
-            </div>
-          )}
-        </motion.div>
+          </motion.div>
+        </AnimatePresence>
       </div>
 
-      {/* Feedback flash */}
-      <AnimatePresence>
-        {feedback && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            className="mt-4 text-center"
+      {/* Higher / Lower buttons */}
+      {!revealed && (
+        <div className="mt-5 flex gap-3">
+          <Button
+            onClick={() => submitGuess("higher")}
+            variant="secondary"
+            size="lg"
+            className="flex-1 flex items-center justify-center gap-2"
           >
-            <span
-              className={cn(
-                "text-lg font-bold",
-                feedback === "correct" ? "text-green" : "text-wrong"
-              )}
-            >
-              {feedback === "correct" ? "Correct!" : "Wrong!"}
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+            </svg>
+            Higher
+          </Button>
+          <Button
+            onClick={() => submitGuess("lower")}
+            variant="secondary"
+            size="lg"
+            className="flex-1 flex items-center justify-center gap-2"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+            Lower
+          </Button>
+        </div>
+      )}
 
-      {/* Streak callout (streak mode, while playing) */}
-      {mode === "streak" && revealed && lastAnswerCorrect && streak > 1 && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-2 text-center text-2xl font-bold text-green"
-        >
-          Streak: {streak}
+      {/* Next / feedback when revealed */}
+      {revealed && !isFinished && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-5">
+          <div className="mb-3 text-center">
+            <span className={cn("text-lg font-bold", lastAnswerCorrect ? "text-green" : "text-wrong")}>
+              {lastAnswerCorrect ? "Correct!" : "Wrong!"}
+            </span>
+          </div>
+          <Button onClick={nextPair} size="lg" className="w-full">
+            Next
+          </Button>
         </motion.div>
       )}
 
-      {/* Next button */}
-      <AnimatePresence>
-        {revealed && !usePopulationGame.getState().isFinished && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-6"
-          >
-            <Button onClick={nextPair} size="lg" className="w-full">
-              {mode === "rounds" && currentRound >= totalRounds
-                ? "See Results"
-                : "Next"}
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Keyboard hint */}
+      <div className="mt-4 text-center text-[10px] text-slate-600">
+        Use ↑↓ arrow keys or click buttons
+      </div>
     </div>
   );
 }
