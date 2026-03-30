@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePopulationGame } from "@/application/usePopulationGame";
+import { useGlobeStore } from "@/application/useGlobe";
 import { useGameSave } from "@/application/useGameSave";
 import { formatNumber } from "@/lib/utils/formatters";
 import { Button } from "@/presentation/ui/Button";
@@ -150,6 +151,20 @@ function GameScreen() {
     nextPair,
   } = usePopulationGame();
 
+  const { flyToCountry, highlightCountry } = useGlobeStore();
+
+  // Fly to country B when it appears
+  useEffect(() => {
+    if (countryB) flyToCountry(countryB.lat, countryB.lng);
+  }, [countryB?.code]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Highlight on reveal
+  useEffect(() => {
+    if (revealed && countryB) {
+      highlightCountry(countryB.code, lastAnswerCorrect ? "#00e676" : "#ff5252");
+    }
+  }, [revealed]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Keyboard controls: Arrow Up = Higher, Arrow Down = Lower, Enter = Next
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -169,7 +184,7 @@ function GameScreen() {
   const isFinished = usePopulationGame.getState().isFinished;
 
   return (
-    <div className="mx-auto max-w-sm">
+    <div className="mx-auto max-w-md">
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         {mode === "streak" ? (
@@ -244,16 +259,21 @@ function GameScreen() {
         </AnimatePresence>
       </div>
 
-      {/* Next / feedback when revealed */}
-      {revealed && !isFinished && (
+      {/* Feedback + Next/Game Over when revealed */}
+      {revealed && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-5">
           <div className="mb-3 text-center">
             <span className={cn("text-lg font-bold", lastAnswerCorrect ? "text-green" : "text-wrong")}>
               {lastAnswerCorrect ? "Correct!" : "Wrong!"}
             </span>
+            {isFinished && mode === "streak" && (
+              <div className="mt-1 text-sm text-slate-400">
+                Final streak: <span className="font-bold text-white">{streak}</span>
+              </div>
+            )}
           </div>
           <Button onClick={nextPair} size="lg" className="w-full">
-            Next
+            {isFinished ? "See Results" : "Next"}
           </Button>
         </motion.div>
       )}

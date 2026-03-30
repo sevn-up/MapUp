@@ -88,11 +88,8 @@ export const usePopulationGame = create<PopulationGameState>((set, get) => ({
       updates.score = get().score + 1;
       updates.streak = get().streak + 1;
     } else {
-      updates.streak = 0;
-      if (mode === "streak") {
-        updates.isPlaying = false;
-        updates.isFinished = true;
-      }
+      // Don't immediately finish — let the player see the answer first
+      // nextPair() will transition to finished
     }
 
     set(updates);
@@ -100,8 +97,14 @@ export const usePopulationGame = create<PopulationGameState>((set, get) => ({
   },
 
   nextPair: () => {
-    const { countryB, currentRound, totalRounds, mode, usedCodes } = get();
+    const { countryB, currentRound, totalRounds, mode, usedCodes, lastAnswerCorrect } = get();
     if (!countryB) return;
+
+    // If last answer was wrong in streak mode, finish now (player already saw the answer)
+    if (mode === "streak" && lastAnswerCorrect === false) {
+      set({ isPlaying: false, isFinished: true });
+      return;
+    }
 
     if (mode === "rounds" && currentRound >= totalRounds) {
       set({ isPlaying: false, isFinished: true });
