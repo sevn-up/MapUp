@@ -172,8 +172,10 @@ function GameScreen() {
         if (e.key === "Enter" || e.key === "ArrowUp" || e.key === "ArrowDown") nextPair();
         return;
       }
-      if (e.key === "ArrowUp") submitGuess("higher");
-      if (e.key === "ArrowDown") submitGuess("lower");
+      // Arrow Up = select top card (A has more) = B is lower
+      // Arrow Down = select bottom card (B has more) = B is higher
+      if (e.key === "ArrowUp") submitGuess("lower");
+      if (e.key === "ArrowDown") submitGuess("higher");
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -225,7 +227,7 @@ function GameScreen() {
         {/* VS divider + streak badge */}
         <div className="flex items-center justify-center gap-3">
           <div className="h-px flex-1 bg-white/5" />
-          <span className="text-[10px] font-medium text-slate-600">{revealed ? "" : "tap who has more"}</span>
+          <span className="text-[10px] font-medium text-slate-600">{revealed ? "" : "which has more people?"}</span>
           {mode === "streak" && streak > 0 && (
             <span className="rounded-full bg-green/10 border border-green/20 px-2 py-0.5 text-xs font-bold text-green">
               {streak}
@@ -281,7 +283,7 @@ function GameScreen() {
       {/* Keyboard hint */}
       {!revealed && (
         <div className="mt-4 text-center text-[10px] text-slate-600">
-          Tap a country or use ↑↓ arrow keys
+          Tap a country or press ↑↓ to select
         </div>
       )}
     </div>
