@@ -186,7 +186,7 @@ function GameScreen() {
   const isFinished = usePopulationGame.getState().isFinished;
 
   return (
-    <div className="mx-auto max-w-md">
+    <div className="mx-auto max-w-md flex flex-col justify-center min-h-full">
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
         {mode === "streak" ? (
