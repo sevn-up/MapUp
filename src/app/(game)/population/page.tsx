@@ -310,6 +310,15 @@ function ResultsScreen() {
     startGame(mode, mode === "rounds" ? 20 : undefined);
   };
 
+  // Enter key to play again
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Enter") handlePlayAgain();
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
