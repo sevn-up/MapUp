@@ -109,10 +109,10 @@ export function CountryInput({
     return matches.slice(0, 8);
   }, [value, excludeSet]);
 
-  // Reset selection when filtered results change
+  // Reset selection when input value changes (not when filtered list updates)
   useEffect(() => {
     setSelectedIndex(0);
-  }, [filtered]);
+  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll selected item into view
   useEffect(() => {

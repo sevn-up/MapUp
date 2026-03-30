@@ -157,7 +157,7 @@ function GameScreen() {
 }
 
 function ResultBanner() {
-  const { targetCountry, guesses, isWon, reset, mode } = useWorldle();
+  const { targetCountry, guesses, isWon, reset, mode, startDaily, startPractice } = useWorldle();
   const { reset: resetGlobe } = useGlobeStore();
   const { saveGame } = useGameSave();
   const [copied, setCopied] = useState(false);
@@ -229,19 +229,32 @@ function ResultBanner() {
         <pre className="text-sm text-slate-300 whitespace-pre-wrap">{shareText}</pre>
       </div>
 
-      <div className="flex gap-2">
-        <Button
-          onClick={handleCopy}
-          variant="secondary"
-          className={cn("flex-1", copied && "border-green/40 text-green")}
-        >
-          {copied ? "Copied!" : "Copy to Share"}
-        </Button>
+      <div className="space-y-2">
+        <div className="flex gap-2">
+          <Button
+            onClick={handleCopy}
+            variant="secondary"
+            className={cn("flex-1", copied && "border-green/40 text-green")}
+          >
+            {copied ? "Copied!" : "Copy to Share"}
+          </Button>
+          <Button
+            onClick={() => {
+              resetGlobe();
+              if (mode === "daily") startDaily();
+              else startPractice();
+            }}
+            className="flex-1"
+          >
+            Play Again
+          </Button>
+        </div>
         <Button
           onClick={() => { resetGlobe(); reset(); }}
-          className="flex-1"
+          variant="ghost"
+          className="w-full"
         >
-          Play Again
+          Back to Menu
         </Button>
       </div>
     </motion.div>

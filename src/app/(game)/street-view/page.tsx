@@ -348,6 +348,11 @@ function ResultsScreen() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePlayAgain = () => {
+    // Reset to start screen — user picks filters and starts fresh
+    reset();
+  };
+
+  const handleBackToMenu = () => {
     reset();
   };
 
@@ -419,7 +424,7 @@ function ResultsScreen() {
         <Button onClick={handlePlayAgain} className="w-full" size="lg">
           Play Again
         </Button>
-        <Button onClick={handlePlayAgain} variant="ghost" className="w-full">
+        <Button onClick={handleBackToMenu} variant="ghost" className="w-full">
           Back to Menu
         </Button>
       </div>

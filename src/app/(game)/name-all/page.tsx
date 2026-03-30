@@ -251,7 +251,7 @@ function GameScreen() {
 }
 
 function ResultsScreen() {
-  const { pool, namedCodes, resetGame, category, timeLimitSeconds, startedAt } = useNameAllGame();
+  const { pool, namedCodes, resetGame, startGame, category, timeLimitSeconds, startedAt } = useNameAllGame();
   const { reset: resetGlobe, highlightCountry, flyToCountry } = useGlobeStore();
   const { saveGame } = useGameSave();
 
@@ -277,6 +277,11 @@ function ResultsScreen() {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePlayAgain = () => {
+    resetGlobe();
+    startGame(timeLimitSeconds / 60, category);
+  };
+
+  const handleBackToMenu = () => {
     resetGlobe();
     resetGame();
   };
@@ -376,7 +381,7 @@ function ResultsScreen() {
         <Button onClick={handlePlayAgain} className="w-full" size="lg">
           Play Again
         </Button>
-        <Button onClick={handlePlayAgain} variant="ghost" className="w-full">
+        <Button onClick={handleBackToMenu} variant="ghost" className="w-full">
           Back to Menu
         </Button>
       </div>

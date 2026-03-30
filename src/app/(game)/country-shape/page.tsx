@@ -319,13 +319,13 @@ function GameScreen() {
 }
 
 function ResultsScreen() {
-  const { score, totalRounds, guesses, resetGame, category } = useCountryShapeGame();
-  const { reset: resetGlobe } = useGlobeStore();
+  const { score, totalRounds, guesses, resetGame, startGame, category } = useCountryShapeGame();
+  const { reset: resetGlobe, highlightCountry, flyToCountry } = useGlobeStore();
   const { saveGame } = useGameSave();
 
   const percentage = Math.round((score / totalRounds) * 100);
 
-  // Save game result on mount
+  // Save game + highlight results on globe
   useEffect(() => {
     saveGame({
       gameMode: "country_shape",
@@ -335,9 +335,18 @@ function ResultsScreen() {
       totalCount: totalRounds,
       metadata: { category, guesses: guesses.map(g => ({ guess: g.guess, answer: g.answer.code, correct: g.isCorrect })) },
     });
+    // Highlight all guessed countries on the globe
+    for (const g of guesses) {
+      highlightCountry(g.answer.code, g.isCorrect ? "#00e676" : "#ff5252");
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePlayAgain = () => {
+    resetGlobe();
+    startGame(totalRounds, category);
+  };
+
+  const handleBackToMenu = () => {
     resetGlobe();
     resetGame();
   };
@@ -373,14 +382,17 @@ function ResultsScreen() {
 
       <div className="mb-6 max-h-[300px] space-y-2 overflow-y-auto pr-2">
         {guesses.map((g, i) => (
-          <motion.div
+          <motion.button
             key={i}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.04 }}
+            onClick={() => flyToCountry(g.answer.lat, g.answer.lng)}
             className={cn(
-              "flex items-center gap-3 rounded-lg border p-3",
-              g.isCorrect ? "border-green/20 bg-green/5" : "border-wrong/20 bg-wrong/5"
+              "flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors cursor-pointer",
+              g.isCorrect
+                ? "border-green/20 bg-green/5 hover:bg-green/10"
+                : "border-wrong/20 bg-wrong/5 hover:bg-wrong/10"
             )}
           >
             <span className="text-lg">{g.answer.flag}</span>
@@ -393,13 +405,17 @@ function ResultsScreen() {
             <span className={cn("text-lg font-bold", g.isCorrect ? "text-green" : "text-wrong")}>
               {g.isCorrect ? "✓" : "✗"}
             </span>
-          </motion.div>
+            <svg className="h-3.5 w-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </motion.button>
         ))}
       </div>
 
       <div className="space-y-3">
         <Button onClick={handlePlayAgain} className="w-full" size="lg">Play Again</Button>
-        <Button onClick={handlePlayAgain} variant="ghost" className="w-full">Back to Menu</Button>
+        <Button onClick={handleBackToMenu} variant="ghost" className="w-full">Back to Menu</Button>
       </div>
     </motion.div>
   );
