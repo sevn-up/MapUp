@@ -186,9 +186,9 @@ function GameScreen() {
         </div>
       </div>
 
-      {/* Vertical card stack */}
+      {/* Vertical card stack — tap the country you think has more people */}
       <div className="space-y-3">
-        {/* Top: Country A (known population) */}
+        {/* Top: Country A (known population) — tap = A has more = B is lower */}
         <AnimatePresence mode="popLayout">
           <motion.div
             key={`a-${countryA.code}`}
@@ -197,14 +197,20 @@ function GameScreen() {
             exit={{ opacity: 0, y: -40 }}
             transition={{ type: "spring", damping: 20, stiffness: 200 }}
           >
-            <CountryCard country={countryA} showPopulation />
+            <button
+              onClick={() => !revealed && submitGuess("lower")}
+              disabled={revealed}
+              className={cn("w-full text-left transition-transform", !revealed && "hover:scale-[1.02] active:scale-[0.98] cursor-pointer")}
+            >
+              <CountryCard country={countryA} showPopulation />
+            </button>
           </motion.div>
         </AnimatePresence>
 
         {/* VS divider + streak badge */}
         <div className="flex items-center justify-center gap-3">
           <div className="h-px flex-1 bg-white/5" />
-          <span className="text-xs font-bold text-slate-600">VS</span>
+          <span className="text-[10px] font-medium text-slate-600">{revealed ? "" : "tap who has more"}</span>
           {mode === "streak" && streak > 0 && (
             <span className="rounded-full bg-green/10 border border-green/20 px-2 py-0.5 text-xs font-bold text-green">
               {streak}
@@ -213,7 +219,7 @@ function GameScreen() {
           <div className="h-px flex-1 bg-white/5" />
         </div>
 
-        {/* Bottom: Country B (unknown population) */}
+        {/* Bottom: Country B (unknown population) — tap = B has more = B is higher */}
         <AnimatePresence mode="popLayout">
           <motion.div
             key={`b-${countryB.code}`}
@@ -222,43 +228,21 @@ function GameScreen() {
             exit={{ opacity: 0, y: -40 }}
             transition={{ type: "spring", damping: 20, stiffness: 200 }}
           >
-            <CountryCard
-              country={countryB}
-              showPopulation={revealed}
-              highlight={revealed ? (lastAnswerCorrect ? "correct" : "wrong") : null}
-              animatePopulation={revealed}
-            />
+            <button
+              onClick={() => !revealed && submitGuess("higher")}
+              disabled={revealed}
+              className={cn("w-full text-left transition-transform", !revealed && "hover:scale-[1.02] active:scale-[0.98] cursor-pointer")}
+            >
+              <CountryCard
+                country={countryB}
+                showPopulation={revealed}
+                highlight={revealed ? (lastAnswerCorrect ? "correct" : "wrong") : null}
+                animatePopulation={revealed}
+              />
+            </button>
           </motion.div>
         </AnimatePresence>
       </div>
-
-      {/* Higher / Lower buttons */}
-      {!revealed && (
-        <div className="mt-5 flex gap-3">
-          <Button
-            onClick={() => submitGuess("higher")}
-            variant="secondary"
-            size="lg"
-            className="flex-1 flex items-center justify-center gap-2"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-            </svg>
-            Higher
-          </Button>
-          <Button
-            onClick={() => submitGuess("lower")}
-            variant="secondary"
-            size="lg"
-            className="flex-1 flex items-center justify-center gap-2"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-            Lower
-          </Button>
-        </div>
-      )}
 
       {/* Next / feedback when revealed */}
       {revealed && !isFinished && (
@@ -275,9 +259,11 @@ function GameScreen() {
       )}
 
       {/* Keyboard hint */}
-      <div className="mt-4 text-center text-[10px] text-slate-600">
-        Use ↑↓ arrow keys or click buttons
-      </div>
+      {!revealed && (
+        <div className="mt-4 text-center text-[10px] text-slate-600">
+          Tap a country or use ↑↓ arrow keys
+        </div>
+      )}
     </div>
   );
 }
