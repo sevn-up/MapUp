@@ -89,10 +89,55 @@ export function alpha2ToNumericCode(alpha2: string): string | undefined {
   return alpha2ToNumeric[alpha2.toUpperCase()];
 }
 
+// Legacy/alternate numeric IDs used in some TopoJSON datasets
+const numericOverrides: Record<string, string> = {
+  "729": "SD", // Sudan (pre-2011 code, still used in world-atlas)
+  "304": "DK", // Greenland → Denmark (territory)
+};
+
+// Build a fast reverse lookup (cached)
+let _numericToAlpha2Cache: Record<string, string> | null = null;
+function getNumericToAlpha2Map(): Record<string, string> {
+  if (_numericToAlpha2Cache) return _numericToAlpha2Cache;
+  const map: Record<string, string> = { ...numericOverrides };
+  for (const [a2, num] of Object.entries(alpha2ToNumeric)) {
+    map[num] = a2;
+  }
+  _numericToAlpha2Cache = map;
+  return map;
+}
+
 export function numericToAlpha2(numeric: string): string | undefined {
   const padded = numeric.padStart(3, "0");
-  for (const [a2, num] of Object.entries(alpha2ToNumeric)) {
-    if (num === padded) return a2;
+  return getNumericToAlpha2Map()[padded];
+}
+
+/**
+ * Map features with undefined IDs to their parent country.
+ * These are typically disputed territories in the TopoJSON data.
+ * Returns alpha2 code based on the feature's centroid location.
+ */
+export function resolveUndefinedFeature(geometry: {
+  type: string;
+  coordinates: number[][][] | number[][][][];
+}): string | undefined {
+  // Get first ring's centroid
+  let coords: number[][];
+  if (geometry.type === "MultiPolygon") {
+    coords = (geometry.coordinates as number[][][][])[0][0];
+  } else {
+    coords = (geometry.coordinates as number[][][])[0];
   }
+  if (!coords || coords.length === 0) return undefined;
+
+  let sumLat = 0, sumLng = 0;
+  for (const [lng, lat] of coords) { sumLat += lat; sumLng += lng; }
+  const avgLat = sumLat / coords.length;
+  const avgLng = sumLng / coords.length;
+
+  // Match by approximate centroid location
+  if (avgLat > 8 && avgLat < 12 && avgLng > 43 && avgLng < 50) return "SO";  // Somaliland → Somalia
+  if (avgLat > 34 && avgLat < 36 && avgLng > 32 && avgLng < 35) return "CY";  // N. Cyprus → Cyprus
+  if (avgLat > 41 && avgLat < 44 && avgLng > 20 && avgLng < 22) return "XK";  // Kosovo
   return undefined;
 }

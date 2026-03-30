@@ -13,15 +13,20 @@ export type QuizCategory =
   | Continent;
 
 export const QUIZ_CATEGORIES: { id: QuizCategory; label: string; description: string }[] = [
-  { id: "random", label: "Random", description: "Any country in the world" },
-  { id: "popular", label: "Well-Known", description: "50 most recognizable countries" },
+  { id: "random", label: "All Countries", description: "Every playable country" },
+  { id: "popular", label: "Well-Known", description: "Most recognizable countries" },
   { id: "hard", label: "Hard Mode", description: "Smaller, trickier countries" },
-  { id: "Africa", label: "Africa", description: "54 African countries" },
-  { id: "Asia", label: "Asia", description: "49 Asian countries" },
-  { id: "Europe", label: "Europe", description: "45 European countries" },
+  { id: "Africa", label: "Africa", description: "African countries" },
+  { id: "Asia", label: "Asia", description: "Asian countries" },
+  { id: "Europe", label: "Europe", description: "European countries" },
   { id: "North America", label: "Americas", description: "North & South America" },
   { id: "Oceania", label: "Oceania", description: "Pacific island nations" },
 ];
+
+/** Get the number of playable countries for a category. */
+export function getCategoryCount(category: QuizCategory): number {
+  return getPool(category).length;
+}
 
 // Top 50 most well-known countries by a mix of population, tourism, and cultural familiarity
 const WELL_KNOWN_CODES = new Set([
@@ -32,25 +37,22 @@ const WELL_KNOWN_CODES = new Set([
   "PH", "VN", "MY", "AT", "BE", "DK", "FI", "CZ", "UA", "CU",
 ]);
 
-// Filter out tiny countries that don't render well
-const playableCountries = countries.filter((c) => c.areaKm2 > 1000);
-
 function getPool(category: QuizCategory): Country[] {
   switch (category) {
     case "popular":
-      return playableCountries.filter((c) => WELL_KNOWN_CODES.has(c.code));
+      return countries.filter((c) => WELL_KNOWN_CODES.has(c.code));
     case "hard":
-      return playableCountries.filter((c) => !WELL_KNOWN_CODES.has(c.code));
+      return countries.filter((c) => !WELL_KNOWN_CODES.has(c.code));
     case "random":
-      return playableCountries;
+      return [...countries];
     case "North America":
       // Combine North + South America
-      return playableCountries.filter(
+      return countries.filter(
         (c) => c.continent === "North America" || c.continent === "South America"
       );
     default:
       // Continent filter
-      return playableCountries.filter((c) => c.continent === category);
+      return countries.filter((c) => c.continent === category);
   }
 }
 

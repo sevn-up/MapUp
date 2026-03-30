@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useCountryShapeGame, QUIZ_CATEGORIES, type QuizCategory } from "@/application/useShapeQuiz";
+import { useCountryShapeGame, QUIZ_CATEGORIES, getCategoryCount, type QuizCategory } from "@/application/useShapeQuiz";
 import { useGlobeStore } from "@/application/useGlobe";
 import { useGameSave } from "@/application/useGameSave";
 import { CountryShape } from "@/presentation/game/CountryShape";
@@ -13,11 +13,39 @@ import { ConfettiEffect } from "@/presentation/game/ConfettiEffect";
 import { Button } from "@/presentation/ui/Button";
 import { cn } from "@/lib/utils/cn";
 
+/**
+ * Generate sensible round options for a category.
+ * Always includes the max (all countries) and a few smaller options.
+ */
+function getRoundOptions(maxCount: number): number[] {
+  if (maxCount <= 10) return [maxCount];
+
+  const options: number[] = [10];
+  if (maxCount >= 25) options.push(25);
+  if (maxCount >= 50) options.push(50);
+  // Always include the full count as the last option
+  if (!options.includes(maxCount)) options.push(maxCount);
+  return options;
+}
+
 function StartScreen() {
   const startGame = useCountryShapeGame((s) => s.startGame);
   const resetGlobe = useGlobeStore((s) => s.reset);
   const [selectedCategory, setSelectedCategory] = useState<QuizCategory>("random");
   const [rounds, setRounds] = useState(10);
+
+  const maxCount = getCategoryCount(selectedCategory);
+  const roundOptions = getRoundOptions(maxCount);
+
+  // Reset rounds when category changes if current selection exceeds new max
+  const handleCategoryChange = (catId: QuizCategory) => {
+    setSelectedCategory(catId);
+    const count = getCategoryCount(catId);
+    const options = getRoundOptions(count);
+    if (!options.includes(rounds)) {
+      setRounds(options[0]);
+    }
+  };
 
   return (
     <motion.div
@@ -41,7 +69,7 @@ function StartScreen() {
           {QUIZ_CATEGORIES.map((cat) => (
             <button
               key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
+              onClick={() => handleCategoryChange(cat.id)}
               className={cn(
                 "rounded-lg border px-3 py-2.5 text-left transition-all",
                 selectedCategory === cat.id
@@ -55,19 +83,21 @@ function StartScreen() {
               )}>
                 {cat.label}
               </div>
-              <div className="text-xs text-slate-500">{cat.description}</div>
+              <div className="text-xs text-slate-500">
+                {getCategoryCount(cat.id)} countries
+              </div>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Round Count */}
+      {/* Round Count — adapts to category */}
       <div className="mb-6">
         <div className="mb-2 text-xs font-medium uppercase tracking-wider text-green/60">
           Rounds
         </div>
         <div className="flex gap-2">
-          {[10, 20, 50].map((n) => (
+          {roundOptions.map((n) => (
             <button
               key={n}
               onClick={() => setRounds(n)}
@@ -78,7 +108,7 @@ function StartScreen() {
                   : "border-white/5 bg-white/[0.02] text-slate-400 hover:bg-white/5"
               )}
             >
-              {n}
+              {n === maxCount ? `All ${n}` : n}
             </button>
           ))}
         </div>
@@ -200,27 +230,15 @@ function GameScreen() {
         <ScoreDisplay score={score} maxScore={totalRounds} />
       </div>
 
-      {/* Progress dots */}
-      <div className="mb-5 flex justify-center gap-1.5">
-        {Array.from({ length: Math.min(totalRounds, 20) }, (_, i) => {
-          const guess = guesses[i];
-          const isCurrent = i === currentRound - 1;
-          return (
-            <div
-              key={i}
-              className={cn(
-                "h-2.5 w-2.5 rounded-full transition-all",
-                !guess
-                  ? isCurrent
-                    ? "bg-green scale-125 shadow-[0_0_8px_rgba(0,230,118,0.5)]"
-                    : "bg-navy-lighter"
-                  : guess.isCorrect
-                    ? "bg-green"
-                    : "bg-wrong"
-              )}
-            />
-          );
-        })}
+      {/* Progress bar (replaces dots for large round counts) */}
+      <div className="mb-5">
+        <div className="h-2 overflow-hidden rounded-full bg-navy-lighter">
+          <motion.div
+            className="h-full rounded-full bg-gradient-to-r from-green-dark to-green"
+            animate={{ width: `${((currentRound - 1) / totalRounds) * 100}%` }}
+            transition={{ type: "spring" as const, damping: 20, stiffness: 100 }}
+          />
+        </div>
       </div>
 
       {/* Shape Display */}

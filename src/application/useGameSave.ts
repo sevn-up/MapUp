@@ -25,6 +25,26 @@ interface SaveResult {
   error?: string;
 }
 
+// Module-level dedup: prevents double saves across Strict Mode remounts.
+// Uses a 5-second window — any save with the same user+mode+score within 5s is a duplicate.
+const recentSaves = new Map<string, number>();
+
+function makeSaveKey(userId: string, gameMode: string, score: number, correctCount: number): string {
+  return `${userId}:${gameMode}:${score}:${correctCount}`;
+}
+
+function isDuplicate(key: string): boolean {
+  const lastSaveTime = recentSaves.get(key);
+  if (lastSaveTime && Date.now() - lastSaveTime < 5000) return true;
+  return false;
+}
+
+function markSaved(key: string): void {
+  recentSaves.set(key, Date.now());
+  // Clean up old entries
+  setTimeout(() => recentSaves.delete(key), 10000);
+}
+
 /**
  * Hook for saving game results to Supabase.
  * Handles: game_sessions insert, XP update, streak tracking, level calculation.
@@ -35,7 +55,7 @@ export function useGameSave() {
   const supabase = useSupabase();
   const [saving, setSaving] = useState(false);
   const [lastSave, setLastSave] = useState<SaveResult | null>(null);
-  const savedRef = useRef(false); // Prevent double saves from React Strict Mode
+  const savedRef = useRef(false);
 
   const saveGame = useCallback(
     async (params: SaveGameParams): Promise<SaveResult> => {
@@ -46,11 +66,13 @@ export function useGameSave() {
         return result;
       }
 
-      // Guard against double-calls (React Strict Mode)
-      if (savedRef.current) {
+      // Guard against double-calls (React Strict Mode double-mount)
+      const dedupeKey = makeSaveKey(user.id, params.gameMode, params.score, params.correctCount);
+      if (savedRef.current || isDuplicate(dedupeKey)) {
         return lastSave || { success: false, xpEarned: 0, streakDays: 0 };
       }
       savedRef.current = true;
+      markSaved(dedupeKey);
 
       setSaving(true);
 

@@ -51,6 +51,7 @@ interface RecentGame {
   correct_count: number;
   total_count: number;
   xp_earned: number;
+  time_seconds: number | null;
   created_at: string;
 }
 
@@ -120,7 +121,7 @@ export default function ProfilePage() {
       // All sessions
       const { data: sessions } = await supabase
         .from("game_sessions")
-        .select("id, game_mode, score, max_score, correct_count, total_count, xp_earned, metadata, created_at")
+        .select("id, game_mode, score, max_score, correct_count, total_count, xp_earned, time_seconds, metadata, created_at")
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false });
 
@@ -198,6 +199,26 @@ export default function ProfilePage() {
         const worldleGames = sessions.filter((s) => s.game_mode === "worldle");
         const dailyGames = sessions.filter((s) => (s.metadata as Record<string, unknown>)?.mode === "daily");
 
+        // Compute Worldle daily streak — consecutive days with a daily Worldle win
+        const dailyWorldleWins = worldleGames
+          .filter((s) => s.correct_count > 0 && (s.metadata as Record<string, unknown>)?.mode === "daily")
+          .map((s) => s.created_at.split("T")[0]);
+        const uniqueDailyDates = [...new Set(dailyWorldleWins)].sort().reverse();
+        let worldleDailyStreak = 0;
+        const today = new Date().toISOString().split("T")[0];
+        for (let i = 0; i < uniqueDailyDates.length; i++) {
+          const expected = new Date(Date.now() - i * 86400000).toISOString().split("T")[0];
+          if (uniqueDailyDates[i] === expected) {
+            worldleDailyStreak++;
+          } else if (i === 0 && uniqueDailyDates[0] !== today) {
+            // Allow streak to start from yesterday
+            const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
+            if (uniqueDailyDates[0] === yesterday) {
+              worldleDailyStreak++;
+            } else break;
+          } else break;
+        }
+
         const userStats = {
           totalGamesPlayed: sessions.length,
           currentStreak: profileData.current_streak,
@@ -212,7 +233,12 @@ export default function ProfilePage() {
           },
           nameAll: {
             bestCount: nameAllGames.length > 0 ? Math.max(...nameAllGames.map((s) => s.correct_count)) : 0,
-            bestTimeSeconds: 300,
+            bestTimeSeconds: nameAllGames.length > 0
+              ? Math.min(...nameAllGames.map((s) => {
+                  const meta = s.metadata as Record<string, unknown>;
+                  return (meta?.elapsedSeconds as number) || s.time_seconds || 9999;
+                }))
+              : 9999,
           },
           worldle: {
             bestGuessCount: worldleGames.length > 0
@@ -220,7 +246,7 @@ export default function ProfilePage() {
                   const meta = s.metadata as Record<string, unknown>;
                   return (meta?.guessCount as number) || 6;
                 })) : 0,
-            dailyStreak: 0,
+            dailyStreak: worldleDailyStreak,
           },
           streetView: { bestDistanceKm: 0, perfectRounds: false, continentsCovered: 0 },
         };

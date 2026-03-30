@@ -5,6 +5,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Stars, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { useGlobeStore } from "@/application/useGlobe";
+import { useGlobeStyle, getTexturePath } from "@/application/useGlobeStyle";
 import { CountryBorders } from "./CountryBorders";
 import { Atmosphere } from "./Atmosphere";
 import { ArcLine } from "./ArcLine";
@@ -12,8 +13,8 @@ import { latLngToVector3 } from "@/infrastructure/geojson";
 
 const GLOBE_RADIUS = 2;
 
-function EarthSphere() {
-  const texture = useTexture("/textures/earth-dark.jpg");
+function TexturedEarthSphere({ texturePath }: { texturePath: string }) {
+  const texture = useTexture(texturePath);
 
   const material = useMemo(() => {
     texture.colorSpace = THREE.SRGBColorSpace;
@@ -29,6 +30,23 @@ function EarthSphere() {
       <sphereGeometry args={[GLOBE_RADIUS, 64, 64]} />
     </mesh>
   );
+}
+
+function WireframeEarthSphere() {
+  return (
+    <mesh>
+      <sphereGeometry args={[GLOBE_RADIUS, 32, 32]} />
+      <meshBasicMaterial color="#0a1929" wireframe={false} />
+    </mesh>
+  );
+}
+
+function EarthSphere() {
+  const style = useGlobeStyle((s) => s.style);
+  const texturePath = getTexturePath(style);
+
+  if (!texturePath) return <WireframeEarthSphere />;
+  return <TexturedEarthSphere texturePath={texturePath} />;
 }
 
 function CameraController() {

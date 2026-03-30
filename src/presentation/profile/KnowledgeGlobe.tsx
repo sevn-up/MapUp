@@ -5,9 +5,16 @@ import { OrbitControls, Stars, useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { Suspense, useMemo } from "react";
 import { Atmosphere } from "@/presentation/globe/Atmosphere";
-import { latLngToVector3, loadCountryFeatures, numericToAlpha2 } from "@/infrastructure/geojson";
+import {
+  extractRings,
+  extractOuterRings,
+  buildLineGeometry,
+  buildFillLines,
+} from "@/presentation/globe/geoUtils";
+import { useGlobeStyle, getTexturePath } from "@/application/useGlobeStyle";
+import { loadCountryFeatures, numericToAlpha2, resolveUndefinedFeature } from "@/infrastructure/geojson";
 import { useEffect, useState } from "react";
-import type { FeatureCollection, Geometry, Position } from "geojson";
+import type { FeatureCollection } from "geojson";
 
 const GLOBE_RADIUS = 2;
 
@@ -17,13 +24,12 @@ interface KnowledgeGlobeProps {
   className?: string;
 }
 
-function EarthSphere() {
-  const texture = useTexture("/textures/earth-dark.jpg");
+function TexturedEarthSphere({ texturePath }: { texturePath: string }) {
+  const texture = useTexture(texturePath);
   const material = useMemo(() => {
     texture.colorSpace = THREE.SRGBColorSpace;
     return new THREE.MeshStandardMaterial({ map: texture, roughness: 0.9, metalness: 0.05 });
   }, [texture]);
-
   return (
     <mesh material={material}>
       <sphereGeometry args={[GLOBE_RADIUS, 64, 64]} />
@@ -31,67 +37,69 @@ function EarthSphere() {
   );
 }
 
-function extractRings(geometry: Geometry): Position[][] {
-  const rings: Position[][] = [];
-  switch (geometry.type) {
-    case "Polygon":
-      (geometry as { coordinates: Position[][] }).coordinates.forEach((r) => rings.push(r));
-      break;
-    case "MultiPolygon":
-      (geometry as { coordinates: Position[][][] }).coordinates.forEach((p) => p.forEach((r) => rings.push(r)));
-      break;
-  }
-  return rings;
-}
+function EarthSphere() {
+  const style = useGlobeStyle((s) => s.style);
+  const texturePath = getTexturePath(style);
 
-function buildLineGeometry(rings: Position[][], radius: number): THREE.BufferGeometry {
-  const points: THREE.Vector3[] = [];
-  for (const ring of rings) {
-    const verts = ring.map(([lng, lat]) => {
-      const [x, y, z] = latLngToVector3(lat, lng, radius);
-      return new THREE.Vector3(x, y, z);
-    });
-    for (let i = 0; i < verts.length - 1; i++) {
-      points.push(verts[i], verts[i + 1]);
-    }
+  if (!texturePath) {
+    return (
+      <mesh>
+        <sphereGeometry args={[GLOBE_RADIUS, 32, 32]} />
+        <meshBasicMaterial color="#0a1929" />
+      </mesh>
+    );
   }
-  return new THREE.BufferGeometry().setFromPoints(points);
+  return <TexturedEarthSphere texturePath={texturePath} />;
 }
 
 /**
  * Standalone country borders for the knowledge globe — doesn't use the shared globe store.
- * Highlights countries based on the countryCounts prop.
+ * Highlights countries based on the countryCounts prop with solid mesh fill.
  */
 function KnowledgeBorders({ countryCounts }: { countryCounts: Map<string, number> }) {
   const [features, setFeatures] = useState<FeatureCollection | null>(null);
 
   useEffect(() => {
-    loadCountryFeatures("110m").then(setFeatures);
+    loadCountryFeatures("50m").then(setFeatures);
   }, []);
 
   const { defaultGeo, highlightedItems } = useMemo(() => {
-    if (!features) return { defaultGeo: null, highlightedItems: [] as { geo: THREE.BufferGeometry; color: string }[] };
+    if (!features)
+      return {
+        defaultGeo: null,
+        highlightedItems: [] as { fillGeo: THREE.BufferGeometry; borderGeo: THREE.BufferGeometry; color: string }[],
+      };
 
-    const defaultRings: Position[][] = [];
-    const hlItems: { geo: THREE.BufferGeometry; color: string }[] = [];
+    const defaultRings: import("geojson").Position[][] = [];
+    const hlItems: { fillGeo: THREE.BufferGeometry; borderGeo: THREE.BufferGeometry; color: string }[] = [];
 
     for (const feature of features.features) {
       const numId = feature.id?.toString() ?? "";
-      const alpha2 = numericToAlpha2(numId);
+      const alpha2 = numId
+        ? numericToAlpha2(numId)
+        : resolveUndefinedFeature(feature.geometry as { type: string; coordinates: number[][][] | number[][][][] });
       const count = alpha2 ? countryCounts.get(alpha2) : undefined;
-      const rings = extractRings(feature.geometry);
 
       if (count && count > 0) {
         const intensity = Math.min(count / 5, 1);
         const g = Math.round(80 + intensity * 150);
         const color = `rgb(0, ${g}, ${Math.round(40 + intensity * 60)})`;
-        hlItems.push({ geo: buildLineGeometry(rings, GLOBE_RADIUS + 0.005), color });
+
+        const rings = extractRings(feature.geometry);
+        const outerRings = extractOuterRings(feature.geometry);
+        const fillGeo = buildFillLines(outerRings, GLOBE_RADIUS + 0.004);
+        const borderGeo = buildLineGeometry(rings, GLOBE_RADIUS + 0.005);
+        hlItems.push({ fillGeo, borderGeo, color });
       } else {
+        const rings = extractRings(feature.geometry);
         defaultRings.push(...rings);
       }
     }
 
-    return { defaultGeo: buildLineGeometry(defaultRings, GLOBE_RADIUS + 0.003), highlightedItems: hlItems };
+    return {
+      defaultGeo: buildLineGeometry(defaultRings, GLOBE_RADIUS + 0.003),
+      highlightedItems: hlItems,
+    };
   }, [features, countryCounts]);
 
   if (!features) return null;
@@ -104,9 +112,14 @@ function KnowledgeBorders({ countryCounts }: { countryCounts: Map<string, number
         </lineSegments>
       )}
       {highlightedItems.map((item, i) => (
-        <lineSegments key={i} geometry={item.geo}>
-          <lineBasicMaterial color={item.color} transparent opacity={0.8} />
-        </lineSegments>
+        <group key={i}>
+          <lineSegments geometry={item.fillGeo}>
+            <lineBasicMaterial color={item.color} transparent opacity={0.5} />
+          </lineSegments>
+          <lineSegments geometry={item.borderGeo}>
+            <lineBasicMaterial color={item.color} transparent opacity={0.8} />
+          </lineSegments>
+        </group>
       ))}
     </group>
   );

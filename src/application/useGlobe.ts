@@ -10,6 +10,8 @@ interface GlobeStore {
   flyTarget: { lat: number; lng: number } | null;
   arcs: Arc[];
   autoRotate: boolean;
+  hideGlobe: boolean;
+  leftPanelMode: "globe" | "street-view-map";
 
   flyToCountry: (lat: number, lng: number) => void;
   highlightCountry: (code: string, color: string) => void;
@@ -17,6 +19,8 @@ interface GlobeStore {
   showArc: (from: [number, number], to: [number, number]) => void;
   clearArcs: () => void;
   setAutoRotate: (enabled: boolean) => void;
+  setHideGlobe: (hide: boolean) => void;
+  setLeftPanelMode: (mode: "globe" | "street-view-map") => void;
   reset: () => void;
 }
 
@@ -25,6 +29,8 @@ export const useGlobeStore = create<GlobeStore>((set) => ({
   flyTarget: null,
   arcs: [],
   autoRotate: true,
+  hideGlobe: false,
+  leftPanelMode: "globe" as const,
 
   flyToCountry: (lat, lng) => set({ flyTarget: { lat, lng }, autoRotate: false }),
 
@@ -49,11 +55,17 @@ export const useGlobeStore = create<GlobeStore>((set) => ({
 
   setAutoRotate: (enabled) => set({ autoRotate: enabled }),
 
+  setHideGlobe: (hide) => set({ hideGlobe: hide }),
+
+  setLeftPanelMode: (mode) => set({ leftPanelMode: mode }),
+
   reset: () =>
     set({
       highlightedCountries: new Map(),
       flyTarget: null,
       arcs: [],
       autoRotate: true,
+      hideGlobe: false,
+      leftPanelMode: "globe" as const,
     }),
 }));

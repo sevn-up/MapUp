@@ -34,6 +34,7 @@ interface NameAllGameState {
   namedCodes: Set<string>;
   lastNamed: Country | null;
   wrongGuess: string | null;
+  startedAt: number | null;
 
   // Actions
   startGame: (timeMinutes: number, category?: NameAllCategory) => void;
@@ -51,6 +52,7 @@ export const useNameAllGame = create<NameAllGameState>((set, get) => ({
   namedCodes: new Set(),
   lastNamed: null,
   wrongGuess: null,
+  startedAt: null,
 
   startGame: (timeMinutes: number, category: NameAllCategory = "all") => {
     const pool = getPool(category);
@@ -63,6 +65,7 @@ export const useNameAllGame = create<NameAllGameState>((set, get) => ({
       namedCodes: new Set(),
       lastNamed: null,
       wrongGuess: null,
+      startedAt: Date.now(),
     });
   },
 

@@ -251,13 +251,14 @@ function GameScreen() {
 }
 
 function ResultsScreen() {
-  const { pool, namedCodes, resetGame, category, timeLimitSeconds } = useNameAllGame();
+  const { pool, namedCodes, resetGame, category, timeLimitSeconds, startedAt } = useNameAllGame();
   const { reset: resetGlobe, highlightCountry, flyToCountry } = useGlobeStore();
   const { saveGame } = useGameSave();
 
   const named = pool.filter((c) => namedCodes.has(c.code));
   const missed = pool.filter((c) => !namedCodes.has(c.code));
   const percentage = Math.round((named.length / pool.length) * 100);
+  const elapsedSeconds = startedAt ? Math.round((Date.now() - startedAt) / 1000) : timeLimitSeconds;
 
   const [showTab, setShowTab] = useState<"named" | "missed">("missed");
 
@@ -270,8 +271,8 @@ function ResultsScreen() {
       maxScore: pool.length,
       correctCount: named.length,
       totalCount: pool.length,
-      timeSeconds: timeLimitSeconds,
-      metadata: { category, named: named.map(c => c.code) },
+      timeSeconds: elapsedSeconds,
+      metadata: { category, named: named.map(c => c.code), elapsedSeconds },
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 

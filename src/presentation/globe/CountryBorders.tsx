@@ -1,98 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import * as THREE from "three";
-import type { FeatureCollection, Geometry, Position } from "geojson";
-import {
-  loadCountryFeatures,
-  latLngToVector3,
-  numericToAlpha2,
-} from "@/infrastructure/geojson";
+import type * as THREE from "three";
+import type { FeatureCollection } from "geojson";
+import { loadCountryFeatures, numericToAlpha2, resolveUndefinedFeature } from "@/infrastructure/geojson";
 import { useGlobeStore } from "@/application/useGlobe";
+import {
+  extractRings,
+  extractOuterRings,
+  buildLineGeometry,
+  buildFillLines,
+} from "./geoUtils";
 
 interface CountryBordersProps {
   radius: number;
-}
-
-function coordsToPoints(coords: Position[], radius: number): THREE.Vector3[] {
-  return coords.map(([lng, lat]) => {
-    const [x, y, z] = latLngToVector3(lat, lng, radius);
-    return new THREE.Vector3(x, y, z);
-  });
-}
-
-function extractRings(geometry: Geometry): Position[][] {
-  const rings: Position[][] = [];
-  switch (geometry.type) {
-    case "Polygon":
-      geometry.coordinates.forEach((ring) => rings.push(ring));
-      break;
-    case "MultiPolygon":
-      geometry.coordinates.forEach((polygon) =>
-        polygon.forEach((ring) => rings.push(ring))
-      );
-      break;
-  }
-  return rings;
-}
-
-function buildLineGeometry(
-  rings: Position[][],
-  radius: number
-): THREE.BufferGeometry {
-  const points: THREE.Vector3[] = [];
-  for (const ring of rings) {
-    const verts = coordsToPoints(ring, radius);
-    for (let i = 0; i < verts.length - 1; i++) {
-      points.push(verts[i], verts[i + 1]);
-    }
-  }
-  return new THREE.BufferGeometry().setFromPoints(points);
-}
-
-/**
- * Build a subtle fill by rendering borders at a few offset radii
- * plus 2-3 gentle inset layers. Keeps it clean, no fractal look.
- */
-function buildFillGeometry(
-  rings: Position[][],
-  radius: number
-): THREE.BufferGeometry {
-  const points: THREE.Vector3[] = [];
-
-  // 3 radii layers for border thickness
-  for (let l = 0; l < 3; l++) {
-    const r = radius + l * 0.001;
-    for (const ring of rings) {
-      const verts = coordsToPoints(ring, r);
-      for (let i = 0; i < verts.length - 1; i++) {
-        points.push(verts[i], verts[i + 1]);
-      }
-    }
-  }
-
-  // 2 gentle inset layers for a subtle fill effect
-  for (const ring of rings) {
-    if (ring.length < 4) continue;
-    const pts = ring.slice(0, -1);
-    let cLat = 0, cLng = 0;
-    for (const [lng, lat] of pts) { cLat += lat; cLng += lng; }
-    cLat /= pts.length;
-    cLng /= pts.length;
-
-    for (const s of [0.85, 0.65]) {
-      const inset: Position[] = pts.map(([lng, lat]) => [
-        cLng + (lng - cLng) * s,
-        cLat + (lat - cLat) * s,
-      ]);
-      const verts = coordsToPoints(inset, radius + 0.002);
-      for (let i = 0; i < verts.length - 1; i++) {
-        points.push(verts[i], verts[i + 1]);
-      }
-    }
-  }
-
-  return new THREE.BufferGeometry().setFromPoints(points);
 }
 
 export function CountryBorders({ radius }: CountryBordersProps) {
@@ -107,23 +28,37 @@ export function CountryBorders({ radius }: CountryBordersProps) {
     if (!features)
       return {
         defaultBorderGeo: null,
-        highlightedItems: [] as { fillGeo: THREE.BufferGeometry; borderGeo: THREE.BufferGeometry; color: string }[],
+        highlightedItems: [] as {
+          fillGeo: THREE.BufferGeometry;
+          borderGeo: THREE.BufferGeometry;
+          color: string;
+        }[],
       };
 
-    const defaultRings: Position[][] = [];
-    const hlItems: { fillGeo: THREE.BufferGeometry; borderGeo: THREE.BufferGeometry; color: string }[] = [];
+    const defaultRings: import("geojson").Position[][] = [];
+    const hlItems: {
+      fillGeo: THREE.BufferGeometry;
+      borderGeo: THREE.BufferGeometry;
+      color: string;
+    }[] = [];
 
     for (const feature of features.features) {
       const numericId = feature.id?.toString() ?? "";
-      const alpha2 = numericToAlpha2(numericId);
+      const alpha2 = numericId
+        ? numericToAlpha2(numericId)
+        : resolveUndefinedFeature(feature.geometry as { type: string; coordinates: number[][][] | number[][][][] });
       const hlColor = alpha2 ? highlightedCountries.get(alpha2) : undefined;
-      const rings = extractRings(feature.geometry);
 
       if (hlColor) {
-        const fillGeo = buildFillGeometry(rings, radius + 0.002);
+        const rings = extractRings(feature.geometry);
+        // Dense scan-line fill using outer rings only (no holes)
+        const outerRings = extractOuterRings(feature.geometry);
+        const fillGeo = buildFillLines(outerRings, radius + 0.004);
+        // Crisp border lines on top
         const borderGeo = buildLineGeometry(rings, radius + 0.005);
         hlItems.push({ fillGeo, borderGeo, color: hlColor });
       } else {
+        const rings = extractRings(feature.geometry);
         defaultRings.push(...rings);
       }
     }
@@ -143,12 +78,12 @@ export function CountryBorders({ radius }: CountryBordersProps) {
         </lineSegments>
       )}
 
-      {/* Highlighted countries — thick colored fill + bright border */}
+      {/* Highlighted countries — dense line fill + crisp border */}
       {highlightedItems.map((item, i) => (
         <group key={`hl-${i}`}>
-          {/* Dense fill layer */}
+          {/* Dense scan-line fill */}
           <lineSegments geometry={item.fillGeo}>
-            <lineBasicMaterial color={item.color} transparent opacity={0.7} />
+            <lineBasicMaterial color={item.color} transparent opacity={0.6} />
           </lineSegments>
           {/* Bright outer border */}
           <lineSegments geometry={item.borderGeo}>

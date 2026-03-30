@@ -4,7 +4,73 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/presentation/providers/AuthProvider";
 import { useSupabase } from "@/presentation/providers/SupabaseProvider";
 import { Button } from "@/presentation/ui/Button";
+import { useGlobeStyle, GLOBE_STYLES, type GlobeStyle } from "@/application/useGlobeStyle";
+import { cn } from "@/lib/utils/cn";
 import { useRouter } from "next/navigation";
+
+const STYLE_PREVIEWS: Record<GlobeStyle, { bg: string; description: string }> = {
+  dark: { bg: "bg-gradient-to-br from-[#1a1a2e] to-[#16213e]", description: "Subtle dark satellite" },
+  blue: { bg: "bg-gradient-to-br from-[#1a4a6e] to-[#2d6a8f]", description: "Classic blue marble" },
+  night: { bg: "bg-gradient-to-br from-[#0a0a1a] to-[#1a1a3e]", description: "City lights at night" },
+  wireframe: { bg: "bg-gradient-to-br from-[#0a1929] to-[#0d2137]", description: "Minimal borders only" },
+};
+
+function GlobeStylePicker() {
+  const { style, setStyle } = useGlobeStyle();
+
+  return (
+    <div>
+      <div className="mb-3">
+        <h2 className="text-sm font-semibold text-white">Globe Style</h2>
+        <p className="text-xs text-slate-500">Choose how the 3D globe looks across the app</p>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {GLOBE_STYLES.map((gs) => {
+          const preview = STYLE_PREVIEWS[gs.id];
+          const active = style === gs.id;
+          return (
+            <button
+              key={gs.id}
+              onClick={() => setStyle(gs.id)}
+              className={cn(
+                "group relative overflow-hidden rounded-xl border p-3 text-left transition-all",
+                active
+                  ? "border-green/40 bg-green/5 ring-1 ring-green/20"
+                  : "border-white/5 bg-white/[0.02] hover:bg-white/5"
+              )}
+            >
+              <div className={cn(
+                "mb-2 h-16 rounded-lg flex items-center justify-center",
+                preview.bg
+              )}>
+                {gs.texture ? (
+                  <div className="text-2xl opacity-70">🌍</div>
+                ) : (
+                  <svg width="40" height="40" viewBox="0 0 40 40" className="opacity-50">
+                    <circle cx="20" cy="20" r="16" fill="none" stroke="#4ade80" strokeWidth="0.5" />
+                    <ellipse cx="20" cy="20" rx="8" ry="16" fill="none" stroke="#4ade80" strokeWidth="0.5" />
+                    <line x1="4" y1="20" x2="36" y2="20" stroke="#4ade80" strokeWidth="0.5" />
+                    <line x1="20" y1="4" x2="20" y2="36" stroke="#4ade80" strokeWidth="0.5" />
+                  </svg>
+                )}
+              </div>
+              <div className={cn(
+                "text-sm font-semibold",
+                active ? "text-green" : "text-slate-300"
+              )}>
+                {gs.label}
+              </div>
+              <div className="text-[10px] text-slate-500">{preview.description}</div>
+              {active && (
+                <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-green" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -120,6 +186,9 @@ export default function SettingsPage() {
           {saving ? "Saving..." : saved ? "Saved!" : "Save Changes"}
         </Button>
       </form>
+
+      {/* Globe Style */}
+      <GlobeStylePicker />
 
       {/* Account info */}
       <div className="rounded-xl border border-white/5 bg-navy-card p-4">

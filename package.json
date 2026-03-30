@@ -17,6 +17,7 @@
     "clsx": "^2.1.1",
     "d3-geo": "^3.1.1",
     "date-fns": "^4.1.0",
+    "earcut": "^3.0.2",
     "framer-motion": "^12.38.0",
     "fuse.js": "^7.1.0",
     "mapbox-gl": "^3.20.0",
@@ -34,6 +35,8 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.2",
     "@types/d3-geo": "^3.1.0",
+    "@types/earcut": "^3.0.0",
+    "@types/google.maps": "^3.58.1",
     "@types/mapbox-gl": "^3.4.1",
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
