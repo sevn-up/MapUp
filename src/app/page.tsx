@@ -10,30 +10,13 @@ const HomeGlobe = dynamic(
 );
 
 const games = [
-  {
-    href: "/country-shape",
-    title: "Shape Quiz",
-    description: "Identify countries by their silhouette",
-    ready: true,
-  },
-  {
-    href: "/name-all",
-    title: "Name All",
-    description: "Name all 197 countries against the clock",
-    ready: true,
-  },
-  {
-    href: "/worldle",
-    title: "Worldle",
-    description: "Daily country puzzle with distance hints",
-    ready: true,
-  },
-  {
-    href: "/street-view",
-    title: "Street View",
-    description: "Guess locations from street imagery",
-    ready: true,
-  },
+  { href: "/country-shape", title: "Shape Quiz", description: "Identify countries by their silhouette", ready: true },
+  { href: "/capitals", title: "Capitals", description: "Name the capital of each country", ready: true },
+  { href: "/flag-quiz", title: "Flag Quiz", description: "Identify countries by their flag", ready: true },
+  { href: "/name-all", title: "Name All", description: "Name all 197 countries against the clock", ready: true },
+  { href: "/worldle", title: "Worldle", description: "Daily country puzzle with distance hints", ready: true },
+  { href: "/population", title: "Population", description: "Higher or Lower — guess the bigger country", ready: true },
+  { href: "/street-view", title: "Street View", description: "Guess locations from street imagery", ready: true },
 ];
 
 export default function HomePage() {

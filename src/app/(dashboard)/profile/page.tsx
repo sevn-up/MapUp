@@ -60,6 +60,9 @@ const GAME_MODES: Record<string, { label: string; icon: string }> = {
   name_all: { label: "Name All", icon: "🌍" },
   worldle: { label: "Worldle", icon: "🧩" },
   street_view: { label: "Street View", icon: "📍" },
+  capitals: { label: "Capitals", icon: "🏛️" },
+  flag_quiz: { label: "Flag Quiz", icon: "🚩" },
+  population: { label: "Population", icon: "👥" },
 };
 
 function relativeTime(dateStr: string): string {

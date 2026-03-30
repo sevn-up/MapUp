@@ -27,6 +27,9 @@ const gamePins: GamePin[] = [
   { id: "name-all", label: "Name All", description: "Name 197 countries", href: "/name-all", lat: -1.3, lng: 36.8, ready: true },
   { id: "worldle", label: "Worldle", description: "Daily country puzzle", href: "/worldle", lat: 35.7, lng: 139.7, ready: true },
   { id: "street-view", label: "Street View", description: "Guess the location", href: "/street-view", lat: -22.9, lng: -43.2, ready: true },
+  { id: "capitals", label: "Capitals", description: "Name the capital city", href: "/capitals", lat: 38.9, lng: -77.0, ready: true },
+  { id: "flag-quiz", label: "Flag Quiz", description: "Identify by flag", href: "/flag-quiz", lat: 64.1, lng: -21.9, ready: true },
+  { id: "population", label: "Population", description: "Higher or Lower", href: "/population", lat: 28.6, lng: 77.2, ready: true },
 ];
 
 function EarthSphere() {

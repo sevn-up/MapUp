@@ -1,23 +1,58 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/presentation/providers/AuthProvider";
 import { cn } from "@/lib/utils/cn";
 
-const navLinks = [
-  { href: "/country-shape", label: "Shape Quiz" },
-  { href: "/name-all", label: "Name All" },
-  { href: "/worldle", label: "Worldle" },
-  { href: "/street-view", label: "Street View" },
+const gameCategories = [
+  {
+    label: "Quiz Games",
+    games: [
+      { href: "/country-shape", label: "Shape Quiz", desc: "Identify by silhouette" },
+      { href: "/capitals", label: "Capitals Quiz", desc: "Name the capital city" },
+      { href: "/flag-quiz", label: "Flag Quiz", desc: "Identify by flag" },
+    ],
+  },
+  {
+    label: "Challenge Games",
+    games: [
+      { href: "/name-all", label: "Name All", desc: "Name 197 countries" },
+      { href: "/worldle", label: "Worldle", desc: "Daily country puzzle" },
+      { href: "/population", label: "Population", desc: "Higher or Lower" },
+    ],
+  },
+  {
+    label: "Explore",
+    games: [
+      { href: "/street-view", label: "Street View", desc: "Guess the location" },
+    ],
+  },
 ];
+
+const allGameLinks = gameCategories.flatMap((c) => c.games);
 
 export function Navbar() {
   const { user, loading } = useAuth();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [gamesOpen, setGamesOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const isGamePage = allGameLinks.some((g) => pathname === g.href);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setGamesOpen(false);
+      }
+    }
+    if (gamesOpen) document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [gamesOpen]);
 
   return (
     <nav className="pointer-events-none fixed top-0 left-0 right-0 z-50 border-b border-green/10 bg-navy/80 backdrop-blur-xl">
@@ -26,37 +61,71 @@ export function Navbar() {
         <Link
           href="/"
           className="pointer-events-auto text-xl font-bold tracking-tight text-white"
-          onClick={() => setMobileOpen(false)}
+          onClick={() => { setMobileOpen(false); setGamesOpen(false); }}
         >
           Map<span className="text-green">Up</span>
         </Link>
 
-        {/* Desktop nav */}
-        <div className="pointer-events-auto hidden items-center gap-1 md:flex">
-          {navLinks.map((link) => {
-            const isActive = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn(
-                  "relative rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  isActive
-                    ? "text-green"
-                    : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
-                )}
+        {/* Desktop nav — Games dropdown */}
+        <div className="pointer-events-auto hidden items-center gap-1 md:flex" ref={dropdownRef}>
+          <button
+            onClick={() => setGamesOpen(!gamesOpen)}
+            className={cn(
+              "relative rounded-lg px-3 py-2 text-sm font-medium transition-colors flex items-center gap-1",
+              isGamePage ? "text-green" : "text-slate-400 hover:bg-white/5 hover:text-slate-200"
+            )}
+          >
+            {isGamePage && (
+              <motion.div
+                layoutId="nav-active"
+                className="absolute inset-0 rounded-lg bg-green/10 border border-green/20"
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              />
+            )}
+            <span className="relative">Games</span>
+            <svg className={cn("relative h-3.5 w-3.5 transition-transform", gamesOpen && "rotate-180")} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {/* Dropdown */}
+          <AnimatePresence>
+            {gamesOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.15 }}
+                className="absolute top-14 left-1/2 -translate-x-1/2 w-[480px] rounded-xl border border-green/10 bg-navy/95 backdrop-blur-xl shadow-2xl shadow-black/40 overflow-hidden"
               >
-                {isActive && (
-                  <motion.div
-                    layoutId="nav-active"
-                    className="absolute inset-0 rounded-lg bg-green/10 border border-green/20"
-                    transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                  />
-                )}
-                <span className="relative">{link.label}</span>
-              </Link>
-            );
-          })}
+                <div className="grid grid-cols-3 gap-0 p-2">
+                  {gameCategories.map((cat) => (
+                    <div key={cat.label} className="p-2">
+                      <div className="mb-2 text-[10px] font-medium uppercase tracking-widest text-green/50 px-2">
+                        {cat.label}
+                      </div>
+                      {cat.games.map((game) => (
+                        <Link
+                          key={game.href}
+                          href={game.href}
+                          onClick={() => setGamesOpen(false)}
+                          className={cn(
+                            "block rounded-lg px-2 py-2 transition-colors",
+                            pathname === game.href
+                              ? "bg-green/10 text-green"
+                              : "text-slate-300 hover:bg-white/5 hover:text-white"
+                          )}
+                        >
+                          <div className="text-sm font-medium">{game.label}</div>
+                          <div className="text-[10px] text-slate-500">{game.desc}</div>
+                        </Link>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Right side */}
@@ -114,21 +183,28 @@ export function Navbar() {
             exit={{ opacity: 0, height: 0 }}
             className="pointer-events-auto overflow-hidden border-t border-green/5 bg-navy/95 backdrop-blur-xl md:hidden"
           >
-            <div className="space-y-1 px-4 py-3">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={cn(
-                    "block rounded-lg px-3 py-2.5 text-sm font-medium",
-                    pathname === link.href
-                      ? "bg-green/10 text-green"
-                      : "text-slate-400 hover:bg-white/5 hover:text-white"
-                  )}
-                >
-                  {link.label}
-                </Link>
+            <div className="space-y-3 px-4 py-3">
+              {gameCategories.map((cat) => (
+                <div key={cat.label}>
+                  <div className="mb-1 text-[10px] font-medium uppercase tracking-widest text-green/50 px-3">
+                    {cat.label}
+                  </div>
+                  {cat.games.map((game) => (
+                    <Link
+                      key={game.href}
+                      href={game.href}
+                      onClick={() => setMobileOpen(false)}
+                      className={cn(
+                        "block rounded-lg px-3 py-2.5 text-sm font-medium",
+                        pathname === game.href
+                          ? "bg-green/10 text-green"
+                          : "text-slate-400 hover:bg-white/5 hover:text-white"
+                      )}
+                    >
+                      {game.label}
+                    </Link>
+                  ))}
+                </div>
               ))}
               {!user && !loading && (
                 <Link

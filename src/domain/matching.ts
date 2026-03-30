@@ -42,6 +42,25 @@ export function matchesCountry(guess: string, country: Country): boolean {
 }
 
 /**
+ * Check if a guess matches a country's capital (exact or fuzzy).
+ */
+export function matchesCapital(guess: string, country: Country): boolean {
+  const g = guess.toLowerCase().trim();
+  const capital = country.capital.toLowerCase();
+
+  if (capital === g) return true;
+
+  // Handle partial matches for compound capitals (e.g. "Washington" for "Washington, D.C.")
+  if (capital.includes(",") && capital.split(",")[0].trim().toLowerCase() === g) return true;
+
+  // Fuzzy match with Levenshtein
+  if (capital.length <= 4) return g === capital;
+  if (levenshtein(g, capital) <= Math.min(2, Math.floor(capital.length / 4))) return true;
+
+  return false;
+}
+
+/**
  * Shuffle an array (Fisher-Yates).
  */
 export function shuffleArray<T>(arr: T[]): T[] {

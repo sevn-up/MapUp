@@ -39,7 +39,7 @@ export interface DistanceResult {
 
 // ============ Game Types ============
 
-export type GameMode = "country_shape" | "name_all" | "worldle" | "street_view";
+export type GameMode = "country_shape" | "name_all" | "worldle" | "street_view" | "population" | "capitals" | "flag_quiz";
 
 export interface GameSession {
   id: string;

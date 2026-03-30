@@ -7,6 +7,9 @@ export const GAME_MODES = {
   NAME_ALL: "name_all",
   WORLDLE: "worldle",
   STREET_VIEW: "street_view",
+  CAPITALS: "capitals",
+  FLAG_QUIZ: "flag_quiz",
+  POPULATION: "population",
 } as const;
 
 export const GAME_MODE_LABELS: Record<string, string> = {
@@ -14,6 +17,9 @@ export const GAME_MODE_LABELS: Record<string, string> = {
   [GAME_MODES.NAME_ALL]: "Name All Countries",
   [GAME_MODES.WORLDLE]: "Worldle",
   [GAME_MODES.STREET_VIEW]: "Street View",
+  [GAME_MODES.CAPITALS]: "Capitals Quiz",
+  [GAME_MODES.FLAG_QUIZ]: "Flag Quiz",
+  [GAME_MODES.POPULATION]: "Population Challenge",
 };
 
 export const TOTAL_COUNTRIES = 197;

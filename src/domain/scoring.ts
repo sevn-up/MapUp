@@ -30,6 +30,16 @@ export function calculateScore(
       const { distanceKm = 0 } = params;
       return Math.max(0, Math.round(STREET_VIEW_MAX_SCORE * Math.exp(-distanceKm / 2000)));
     }
+    case GAME_MODES.CAPITALS:
+    case GAME_MODES.FLAG_QUIZ: {
+      const { correct = 0, total = 1 } = params;
+      return Math.round((correct / total) * 1000);
+    }
+    case GAME_MODES.POPULATION: {
+      const { correct = 0, total = 1 } = params;
+      // Streak mode passes streak as correct, 1 as total
+      return total === 1 ? correct * 50 : Math.round((correct / total) * 1000);
+    }
     default:
       return 0;
   }
