@@ -261,6 +261,49 @@ export default function ProfilePage() {
             dailyStreak: worldleDailyStreak,
           },
           streetView: { bestDistanceKm: 0, perfectRounds: false, continentsCovered: 0 },
+          capitals: (() => {
+            const g = sessions.filter((s) => s.game_mode === "capitals");
+            const uniqueCapitals = new Set<string>();
+            for (const s of g) {
+              const meta = s.metadata as Record<string, unknown>;
+              if (Array.isArray(meta?.guesses)) {
+                for (const guess of meta.guesses as { country: string; correct: boolean }[]) {
+                  if (guess.correct) uniqueCapitals.add(guess.country);
+                }
+              }
+            }
+            return {
+              bestScore: g.length > 0 ? Math.max(...g.map((s) => s.correct_count)) : 0,
+              maxPossible: g.length > 0 ? Math.max(...g.map((s) => s.total_count)) : 0,
+              uniqueCorrect: uniqueCapitals.size,
+            };
+          })(),
+          flagQuiz: (() => {
+            const g = sessions.filter((s) => s.game_mode === "flag_quiz");
+            const uniqueFlags = new Set<string>();
+            for (const s of g) {
+              const meta = s.metadata as Record<string, unknown>;
+              if (Array.isArray(meta?.guesses)) {
+                for (const guess of meta.guesses as { country: string; correct: boolean }[]) {
+                  if (guess.correct) uniqueFlags.add(guess.country);
+                }
+              }
+            }
+            return {
+              bestScore: g.length > 0 ? Math.max(...g.map((s) => s.correct_count)) : 0,
+              uniqueCorrect: uniqueFlags.size,
+            };
+          })(),
+          population: (() => {
+            const g = sessions.filter((s) => s.game_mode === "population");
+            let bestStreak = 0;
+            for (const s of g) {
+              const meta = s.metadata as Record<string, unknown>;
+              const streak = (meta?.streak as number) || 0;
+              if (streak > bestStreak) bestStreak = streak;
+            }
+            return { bestStreak };
+          })(),
         };
 
         const achievementList: AchievementData[] = achievementDefs.map((a) => {

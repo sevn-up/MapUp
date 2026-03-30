@@ -26,6 +26,9 @@ const CATEGORY_LABELS: Record<string, string> = {
   name_all: "Name All",
   worldle: "Worldle",
   street_view: "Street View",
+  capitals: "Capitals Quiz",
+  flag_quiz: "Flag Quiz",
+  population: "Population",
 };
 
 export function AchievementGrid({ achievements, className }: AchievementGridProps) {

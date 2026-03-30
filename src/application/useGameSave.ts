@@ -4,6 +4,7 @@ import { useCallback, useState, useRef } from "react";
 import { useAuth } from "@/presentation/providers/AuthProvider";
 import { useSupabase } from "@/presentation/providers/SupabaseProvider";
 import { calculateGameXp, getLevelFromXp } from "@/domain/xp";
+import { useToast } from "@/application/useToast";
 import type { GameMode } from "@/domain/types";
 
 interface SaveGameParams {
@@ -56,6 +57,7 @@ export function useGameSave() {
   const [saving, setSaving] = useState(false);
   const [lastSave, setLastSave] = useState<SaveResult | null>(null);
   const savedRef = useRef(false);
+  const addToast = useToast((s) => s.addToast);
 
   const saveGame = useCallback(
     async (params: SaveGameParams): Promise<SaveResult> => {
@@ -150,6 +152,54 @@ export function useGameSave() {
           .eq("id", user.id);
 
         if (profileError) throw profileError;
+
+        // 7. Check for newly unlocked achievements (fire-and-forget)
+        try {
+          const { data: achievementDefs } = await supabase
+            .from("achievements")
+            .select("id, name, icon, xp_reward, requirement");
+          const { data: userAchievements } = await supabase
+            .from("user_achievements")
+            .select("achievement_id")
+            .eq("user_id", user.id);
+
+          if (achievementDefs && userAchievements) {
+            const unlockedIds = new Set(userAchievements.map((a) => a.achievement_id));
+            const { checkAchievement } = await import("@/domain/achievements");
+
+            // Build minimal stats from this game + profile
+            const minimalStats = {
+              totalGamesPlayed: (profile as Record<string, number>).total_games_played ?? 1,
+              currentStreak: newStreak,
+              longestStreak: newLongestStreak,
+              level: newLevel,
+              friendCount: 0,
+              dailyGamesCompleted: params.isDaily ? 1 : 0,
+              shapeQuiz: { bestScore: params.gameMode === "country_shape" ? params.correctCount : 0, maxPossible: params.gameMode === "country_shape" ? params.totalCount : 0, uniqueCorrect: 0 },
+              nameAll: { bestCount: params.gameMode === "name_all" ? params.correctCount : 0, bestTimeSeconds: params.timeSeconds ?? 9999 },
+              worldle: { bestGuessCount: 0, dailyStreak: 0 },
+              streetView: { bestDistanceKm: 0, perfectRounds: false, continentsCovered: 0 },
+              capitals: { bestScore: params.gameMode === "capitals" ? params.correctCount : 0, maxPossible: params.gameMode === "capitals" ? params.totalCount : 0, uniqueCorrect: 0 },
+              flagQuiz: { bestScore: params.gameMode === "flag_quiz" ? params.correctCount : 0, uniqueCorrect: 0 },
+              population: { bestStreak: params.gameMode === "population" ? params.correctCount : 0 },
+            };
+
+            for (const ach of achievementDefs) {
+              if (unlockedIds.has(ach.id)) continue;
+              if (checkAchievement(ach, minimalStats)) {
+                supabase.from("user_achievements").insert({ user_id: user.id, achievement_id: ach.id }).then(() => {});
+                addToast({
+                  icon: ach.icon,
+                  title: ach.name,
+                  subtitle: `+${ach.xp_reward} XP`,
+                  type: "achievement",
+                });
+              }
+            }
+          }
+        } catch {
+          // Achievement check is best-effort, don't fail the save
+        }
 
         const result: SaveResult = {
           success: true,

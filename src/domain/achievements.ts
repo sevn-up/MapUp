@@ -15,6 +15,9 @@ interface UserStats {
   nameAll: { bestCount: number; bestTimeSeconds: number };
   worldle: { bestGuessCount: number; dailyStreak: number };
   streetView: { bestDistanceKm: number; perfectRounds: boolean; continentsCovered: number };
+  capitals: { bestScore: number; maxPossible: number; uniqueCorrect: number };
+  flagQuiz: { bestScore: number; uniqueCorrect: number };
+  population: { bestStreak: number };
 }
 
 interface AchievementDef {
@@ -47,17 +50,32 @@ export function checkAchievement(achievement: AchievementDef, stats: UserStats):
         return stats.shapeQuiz.bestScore >= stats.shapeQuiz.maxPossible && stats.shapeQuiz.maxPossible > 0;
       }
       if (req.mode === "street_view") return stats.streetView.perfectRounds;
+      if (req.mode === "capitals") {
+        return stats.capitals.bestScore >= stats.capitals.maxPossible && stats.capitals.maxPossible > 0;
+      }
+      if (req.mode === "flag_quiz") {
+        return stats.flagQuiz.bestScore >= 10 && stats.flagQuiz.bestScore > 0;
+      }
       return false;
 
     case "unique_correct":
       if (req.mode === "country_shape") {
         return stats.shapeQuiz.uniqueCorrect >= (req.value as number);
       }
+      if (req.mode === "capitals") {
+        return stats.capitals.uniqueCorrect >= (req.value as number);
+      }
+      if (req.mode === "flag_quiz") {
+        return stats.flagQuiz.uniqueCorrect >= (req.value as number);
+      }
       return false;
 
     case "score_threshold":
       if (req.mode === "name_all") {
         return stats.nameAll.bestCount >= (req.value as number);
+      }
+      if (req.mode === "flag_quiz") {
+        return stats.flagQuiz.bestScore >= (req.value as number);
       }
       return false;
 
@@ -66,6 +84,12 @@ export function checkAchievement(achievement: AchievementDef, stats: UserStats):
         return (
           stats.nameAll.bestCount >= (req.countries as number) &&
           stats.nameAll.bestTimeSeconds <= (req.seconds as number)
+        );
+      }
+      if (req.mode === "flag_quiz") {
+        return (
+          stats.flagQuiz.bestScore >= (req.rounds as number) &&
+          stats.flagQuiz.bestScore > 0
         );
       }
       return false;
@@ -90,6 +114,9 @@ export function checkAchievement(achievement: AchievementDef, stats: UserStats):
 
     case "all_continents":
       return stats.streetView.continentsCovered >= 6;
+
+    case "pop_streak":
+      return stats.population.bestStreak >= (req.value as number);
 
     default:
       return false;
