@@ -335,7 +335,6 @@ function GameScreen() {
                     "active:scale-[0.97]"
                   )}
                 >
-                  <span className="mr-2 text-base">{choice.flag}</span>
                   {choice.name}
                 </button>
               ))}
@@ -375,8 +374,7 @@ function GameScreen() {
                           : "border-white/5 bg-white/[0.02] text-slate-600"
                     )}
                   >
-                    <span className="mr-2 text-base">{choice.flag}</span>
-                    {choice.name}
+                      {choice.name}
                   </div>
                 );
               })}
