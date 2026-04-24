@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { APP_NAME, APP_DESCRIPTION } from "@/lib/utils/constants";
 import { SupabaseProvider } from "@/presentation/providers/SupabaseProvider";
 import { AuthProvider } from "@/presentation/providers/AuthProvider";
@@ -12,6 +12,13 @@ export const metadata: Metadata = {
     template: `%s | ${APP_NAME}`,
   },
   description: APP_DESCRIPTION,
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0a1628",
 };
 
 export default function RootLayout({
