@@ -31,14 +31,23 @@ export default function GameLayout({
   const showStreetViewMap = pathname === "/street-view" && (isPlaying || isFinished);
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col lg:flex-row">
+    <div className="flex h-[calc(100dvh-4rem)] flex-col lg:flex-row">
       {/* Left Panel — 3D Globe or Mapbox Guess Map */}
-      <div className="globe-container relative h-[40vh] w-full shrink-0 lg:h-full lg:w-1/2">
+      <div className="globe-container relative h-[40dvh] w-full shrink-0 lg:h-full lg:w-1/2">
         {showStreetViewMap ? <StreetViewGuessPanel /> : <Globe />}
       </div>
 
-      {/* Game Content Panel */}
-      <div className={`flex-1 overflow-y-auto bg-navy-light ${showStreetViewMap && isPlaying ? "" : "p-6 lg:p-8"}`}>
+      {/* Game Content Panel.
+          Bottom padding is max(intrinsic, safe-area-inset) so home-indicator
+          iPhones don't have content clipped behind the swipe area while
+          desktop keeps its 1.5rem / 2rem padding. */}
+      <div
+        className={`flex-1 overflow-y-auto bg-navy-light ${
+          showStreetViewMap && isPlaying
+            ? "pb-[env(safe-area-inset-bottom)]"
+            : "p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:p-8 lg:pb-[max(2rem,env(safe-area-inset-bottom))]"
+        }`}
+      >
         {children}
       </div>
     </div>
