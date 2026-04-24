@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useWorldle, generateShareText } from "@/application/useWorldle";
 import { useGlobeStore } from "@/application/useGlobe";
 import { useGameFeedback } from "@/hooks/useGameFeedback";
+import { useBreakpoint } from "@/hooks/useBreakpoint";
 import { getCountryByName } from "@/domain/countries";
 import { CountryShape } from "@/presentation/game/CountryShape";
 import { CountryInput } from "@/presentation/game/CountryInput";
@@ -63,6 +64,7 @@ function GameScreen() {
 
   const { setAutoRotate } = useGlobeStore();
   const { feedback, confettiTrigger, shaking, onCorrect, onWrong } = useGameFeedback();
+  const { isMobile } = useBreakpoint();
 
   useEffect(() => {
     setAutoRotate(false);
@@ -105,13 +107,13 @@ function GameScreen() {
       </div>
 
       {/* Country silhouette hint */}
-      <div className="mb-5 flex justify-center">
-        <div className="rounded-2xl border border-green/10 bg-navy p-4">
+      <div className="mb-4 flex justify-center sm:mb-5">
+        <div className="rounded-2xl border border-green/10 bg-navy p-3 sm:p-4">
           <CountryShape
             countryCode={targetCountry.code}
             revealed={isFinished}
             isCorrect={isWon}
-            size={200}
+            size={isMobile ? 140 : 200}
           />
         </div>
       </div>
@@ -137,7 +139,7 @@ function GameScreen() {
           Array.from({ length: remaining }, (_, i) => (
             <div
               key={`empty-${i}`}
-              className="h-12 rounded-lg border border-dashed border-white/5"
+              className="h-10 rounded-lg border border-dashed border-white/5 sm:h-12"
             />
           ))}
       </div>
