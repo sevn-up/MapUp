@@ -205,13 +205,16 @@ export function CountryInput({
             <button
               key={country.code}
               type="button"
-              onMouseDown={(e) => {
+              onPointerDown={(e) => {
+                // preventDefault stops the input from blurring before the
+                // tap completes. PointerEvents unify mouse + touch so a
+                // single handler covers both desktop and mobile.
                 e.preventDefault();
                 submitCountry(country.name);
               }}
               onMouseEnter={() => setSelectedIndex(i)}
               className={cn(
-                "flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors",
+                "flex min-h-[44px] w-full items-center gap-3 px-4 py-2.5 text-left transition-colors",
                 i === selectedIndex
                   ? "bg-green/10 text-white"
                   : "text-slate-300 hover:bg-green/5"
