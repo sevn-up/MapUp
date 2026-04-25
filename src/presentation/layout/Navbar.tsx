@@ -67,7 +67,7 @@ export function Navbar() {
         </Link>
 
         {/* Desktop nav — Games dropdown */}
-        <div className="pointer-events-auto hidden items-center gap-1 md:flex" ref={dropdownRef}>
+        <div className="pointer-events-auto relative hidden items-center gap-1 md:flex" ref={dropdownRef}>
           <button
             onClick={() => setGamesOpen(!gamesOpen)}
             className={cn(
@@ -96,7 +96,7 @@ export function Navbar() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
                 transition={{ duration: 0.15 }}
-                className="absolute top-14 left-1/2 -translate-x-1/2 w-[480px] rounded-xl border border-green/10 bg-navy/95 backdrop-blur-xl shadow-2xl shadow-black/40 overflow-hidden"
+                className="absolute top-14 right-0 w-[min(480px,calc(100vw-2rem))] rounded-xl border border-green/10 bg-navy/95 backdrop-blur-xl shadow-2xl shadow-black/40 overflow-hidden"
               >
                 <div className="grid grid-cols-3 gap-0 p-2">
                   {gameCategories.map((cat) => (

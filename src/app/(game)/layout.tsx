@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useGlobeStore } from "@/application/useGlobe";
 import { useStreetViewGame } from "@/application/useStreetView";
 import { StreetViewGuessPanel } from "@/presentation/game/StreetViewGuessPanel";
+import { getMobileTopPanelHeight } from "@/presentation/game/gameLayoutConfig";
 import { usePathname } from "next/navigation";
 
 const Globe = dynamic(
@@ -29,16 +30,30 @@ export default function GameLayout({
 
   // Show Mapbox guess map only when actively playing or reviewing Street View results
   const showStreetViewMap = pathname === "/street-view" && (isPlaying || isFinished);
+  const mobileTopHeight = getMobileTopPanelHeight(pathname);
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] flex-col lg:flex-row">
-      {/* Left Panel — 3D Globe or Mapbox Guess Map */}
-      <div className="globe-container relative h-[40vh] w-full shrink-0 lg:h-full lg:w-1/2">
+    <div className="flex h-[calc(100dvh-4rem)] flex-col lg:flex-row">
+      {/* Left Panel — 3D Globe or Mapbox Guess Map.
+          Mobile height is per-game (CSS var); desktop uses lg:h-full. */}
+      <div
+        className="globe-container relative h-[var(--mobile-top-h)] w-full shrink-0 lg:h-full lg:w-1/2"
+        style={{ "--mobile-top-h": mobileTopHeight } as React.CSSProperties}
+      >
         {showStreetViewMap ? <StreetViewGuessPanel /> : <Globe />}
       </div>
 
-      {/* Game Content Panel */}
-      <div className={`flex-1 overflow-y-auto bg-navy-light ${showStreetViewMap && isPlaying ? "" : "p-6 lg:p-8"}`}>
+      {/* Game Content Panel.
+          Bottom padding is max(intrinsic, safe-area-inset) so home-indicator
+          iPhones don't have content clipped behind the swipe area while
+          desktop keeps its 1.5rem / 2rem padding. */}
+      <div
+        className={`flex-1 overflow-y-auto bg-navy-light ${
+          showStreetViewMap && isPlaying
+            ? "pb-[env(safe-area-inset-bottom)]"
+            : "p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:p-8 lg:pb-[max(2rem,env(safe-area-inset-bottom))]"
+        }`}
+      >
         {children}
       </div>
     </div>

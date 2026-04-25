@@ -169,21 +169,24 @@ function GameScreen() {
       <FeedbackOverlay type={feedback} />
       <ConfettiEffect trigger={confettiTrigger} />
 
-      {/* Header: timer + progress */}
-      <div className="mb-4 flex items-center justify-between">
+      {/* Header: timer + progress.
+          Compact single-row layout on mobile to reclaim vertical space
+          for the input area when the keyboard is up. */}
+      <div className="mb-3 flex items-center justify-between gap-3 sm:mb-4">
         <GameTimer timeLeft={timeLeft} />
         <div className="text-right">
-          <div className="text-xs font-medium uppercase tracking-wider text-green/60">
+          <div className="hidden text-xs font-medium uppercase tracking-wider text-green/60 sm:block">
             Named
           </div>
-          <div className="text-2xl font-bold tabular-nums text-white">
-            {named}<span className="text-lg text-slate-500">/{total}</span>
+          <div className="text-xl font-bold tabular-nums text-white sm:text-2xl">
+            {named}
+            <span className="text-base text-slate-500 sm:text-lg">/{total}</span>
           </div>
         </div>
       </div>
 
-      {/* Progress bar */}
-      <div className="mb-5 h-2 overflow-hidden rounded-full bg-navy-lighter">
+      {/* Progress bar — slimmer on mobile */}
+      <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-navy-lighter sm:mb-5 sm:h-2">
         <motion.div
           className="h-full rounded-full bg-gradient-to-r from-green-dark to-green"
           animate={{ width: `${progress}%` }}
@@ -353,8 +356,8 @@ function ResultsScreen() {
         </button>
       </div>
 
-      {/* Country list */}
-      <div className="mb-6 max-h-[300px] space-y-1 overflow-y-auto pr-2">
+      {/* Country list — viewport-relative so it adapts to phone height */}
+      <div className="mb-6 max-h-[40dvh] space-y-1 overflow-y-auto pr-2 sm:max-h-[300px]">
         {(showTab === "named" ? named : missed)
           .sort((a, b) => a.name.localeCompare(b.name))
           .map((c, i) => (

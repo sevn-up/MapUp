@@ -33,12 +33,32 @@
 
 html {
   color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   background: var(--color-navy);
   color: #c9d1d9;
   font-family: system-ui, -apple-system, sans-serif;
+  overscroll-behavior-y: none;
+}
+
+button,
+a,
+[role="button"] {
+  touch-action: manipulation;
+}
+
+/* iOS Safari zooms the page when focusing an input whose font-size
+   is below 16px. Force 16px on mobile viewports. */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 /* Globe canvas */
@@ -52,13 +72,15 @@ input:focus {
   box-shadow: 0 0 0 2px var(--color-green);
 }
 
-/* Game card hover */
+/* Game card hover — only on devices that actually hover (not touch) */
 .game-card {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
-.game-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px -12px rgba(0, 230, 118, 0.15);
+@media (hover: hover) {
+  .game-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px -12px rgba(0, 230, 118, 0.15);
+  }
 }
 
 /* Scrollbar styling */
