@@ -165,10 +165,7 @@ function GameScreen() {
   const progress = total > 0 ? (named / total) * 100 : 0;
 
   return (
-    // On mobile: flex column that fills the panel so the input can be
-    // pushed to the bottom (right above the keyboard). On sm: and above,
-    // revert to a normal block layout so desktop is unaffected.
-    <div className="mx-auto flex min-h-full max-w-lg flex-col sm:block">
+    <div className="mx-auto max-w-lg">
       <FeedbackOverlay type={feedback} />
       <ConfettiEffect trigger={confettiTrigger} />
 
@@ -197,66 +194,61 @@ function GameScreen() {
         />
       </div>
 
-      {/* Bottom group — pinned above the keyboard on mobile via mt-auto.
-          On sm: and up, mt-auto becomes a no-op since the parent is
-          block, so this just renders inline like before. */}
-      <div className="mt-auto sm:mt-0">
-        {/* Input with autocomplete */}
-        <div className="mb-4">
-          <CountryInput
-            onSubmit={handleGuess}
-            placeholder="Type a country name..."
-            excludeCodes={Array.from(namedCodes)}
-          />
-        </div>
-
-        {/* Status message */}
-        <div className="mb-4 h-8 text-center text-sm">
-          <AnimatePresence mode="wait">
-            {lastNamed && feedback === "correct" && (
-              <motion.div
-                key={`correct-${lastNamed.code}`}
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="text-green font-medium"
-              >
-                {lastNamed.flag} {lastNamed.name} ✓
-              </motion.div>
-            )}
-            {wrongGuess && feedback === "wrong" && (
-              <motion.div
-                key={`wrong-${wrongGuess}`}
-                initial={{ opacity: 0, y: -5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="text-wrong"
-              >
-                Not a country
-              </motion.div>
-            )}
-            {alreadyMsg && (
-              <motion.div
-                key="already"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="text-slate-500"
-              >
-                Already named!
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Give up */}
-        <button
-          onClick={endGame}
-          className="w-full text-center text-sm text-slate-600 transition-colors hover:text-slate-400"
-        >
-          Give up
-        </button>
+      {/* Input with autocomplete */}
+      <div className="mb-4">
+        <CountryInput
+          onSubmit={handleGuess}
+          placeholder="Type a country name..."
+          excludeCodes={Array.from(namedCodes)}
+        />
       </div>
+
+      {/* Status message */}
+      <div className="mb-4 h-8 text-center text-sm">
+        <AnimatePresence mode="wait">
+          {lastNamed && feedback === "correct" && (
+            <motion.div
+              key={`correct-${lastNamed.code}`}
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="text-green font-medium"
+            >
+              {lastNamed.flag} {lastNamed.name} ✓
+            </motion.div>
+          )}
+          {wrongGuess && feedback === "wrong" && (
+            <motion.div
+              key={`wrong-${wrongGuess}`}
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="text-wrong"
+            >
+              Not a country
+            </motion.div>
+          )}
+          {alreadyMsg && (
+            <motion.div
+              key="already"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-slate-500"
+            >
+              Already named!
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Give up */}
+      <button
+        onClick={endGame}
+        className="w-full text-center text-sm text-slate-600 transition-colors hover:text-slate-400"
+      >
+        Give up
+      </button>
     </div>
   );
 }
