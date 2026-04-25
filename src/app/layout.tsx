@@ -19,6 +19,11 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: "#0a1628",
+  // When the iOS keyboard appears, resize the layout viewport so `dvh`
+  // units shrink to fit the visible area instead of scrolling the
+  // whole page up. Keeps the globe visible above the input on Worldle,
+  // Name All, Capitals, etc.
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({
